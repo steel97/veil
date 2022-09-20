@@ -994,7 +994,7 @@ bool GetDestinationKeyForOutput(CKey& destinationKey, const CWatchOnlyTx& tx, co
             errorMsg = "StealthSecret failed to generate stealth secret";
             return false;
         }
-        LogPrintf("pkext: %s", HexStr(pkExtracted.begin()));
+        LogPrintf("pkext: %s", HexStr(pkExtracted));
 
         if (!sShared.IsValid()) {
             LogPrintf("sShared wasn't valid: tx type %s", tx.type == CWatchOnlyTx::ANON ? "anon" : "stealth");
@@ -1005,8 +1005,8 @@ bool GetDestinationKeyForOutput(CKey& destinationKey, const CWatchOnlyTx& tx, co
             return false;
         }
 
-        LogPrintf("mdest: %s", HexStr(destinationKey.GetPubKey().begin()));
-        LogPrintf("mdest id: %s", HexStr(destinationKey.GetPubKey().GetID().begin()));
+        LogPrintf("mdest: %s", HexStr(destinationKey.GetPubKey()));
+        LogPrintf("mdest id: %s", HexStr(destinationKey.GetPubKey().GetID()));
         if (destinationKey.GetPubKey().GetID() != idk) {
             errorMsg = "GetDestinationKeyForOutput failed to generate correct shared secret";
             return false;
