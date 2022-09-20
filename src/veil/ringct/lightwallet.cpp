@@ -981,20 +981,28 @@ bool GetDestinationKeyForOutput(CKey& destinationKey, const CWatchOnlyTx& tx, co
     if (tx.type == CWatchOnlyTx::ANON) {
         CKeyID idk = tx.ringctout.pk.GetID();
 
+        LogPrintf("rctoutpk: %s\n", HexStr(tx.ringctout.pk));
+        LogPrintf("idk: %s\n", HexStr(idk));
+
         std::vector<uint8_t> vchEphemPK;
         vchEphemPK.resize(33);
         memcpy(&vchEphemPK[0], &tx.ringctout.vData[0], 33);
+
+        LogPrintf("vchephemPK: %s\n", HexStr(vchEphemPK));
 
         CKey sShared;
         ec_point pkExtracted;
         ec_point ecPubKey;
         SetPublicKey(spend_pubkey, ecPubKey);
+        LogPrintf("ecpubkey: %s\n", HexStr(ecPubKey));
 
         if (StealthSecret(scan_secret, vchEphemPK, ecPubKey, sShared, pkExtracted) != 0) {
             errorMsg = "StealthSecret failed to generate stealth secret";
             return false;
         }
-        LogPrintf("pkext: %s", HexStr(pkExtracted));
+
+        LogPrintf("sshared: %s\n", HexStr(sShared));
+        LogPrintf("pkext: %s\n", HexStr(pkExtracted));
 
         if (!sShared.IsValid()) {
             LogPrintf("sShared wasn't valid: tx type %s", tx.type == CWatchOnlyTx::ANON ? "anon" : "stealth");
@@ -1005,8 +1013,8 @@ bool GetDestinationKeyForOutput(CKey& destinationKey, const CWatchOnlyTx& tx, co
             return false;
         }
 
-        LogPrintf("mdest: %s", HexStr(destinationKey.GetPubKey()));
-        LogPrintf("mdest id: %s", HexStr(destinationKey.GetPubKey().GetID()));
+        LogPrintf("mdest: %s\n", HexStr(destinationKey.GetPubKey()));
+        LogPrintf("mdest id: %s\n", HexStr(destinationKey.GetPubKey().GetID()));
         if (destinationKey.GetPubKey().GetID() != idk) {
             errorMsg = "GetDestinationKeyForOutput failed to generate correct shared secret";
             return false;
