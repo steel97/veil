@@ -3,22 +3,22 @@
 //
 
 #include "lightwallet.h"
+#include <amount.h>
+#include <core_io.h>
 #include <key.h>
 #include <key_io.h>
-#include <amount.h>
-#include <util/strencodings.h>
-#include <veil/ringct/watchonly.h>
-#include <veil/ringct/temprecipient.h>
-#include <secp256k1_mlsag.h>
-#include <veil/ringct/blind.h>
-#include <wallet/coincontrol.h>
-#include <veil/ringct/anonwallet.h>
 #include <policy/policy.h>
-#include <core_io.h>
+#include <secp256k1_mlsag.h>
+#include <util/strencodings.h>
+#include <veil/ringct/anonwallet.h>
+#include <veil/ringct/blind.h>
+#include <veil/ringct/temprecipient.h>
+#include <veil/ringct/watchonly.h>
+#include <wallet/coincontrol.h>
 
 
-std::string TestBuildWalletTransaction(int nRandomInt) {
-
+std::string TestBuildWalletTransaction(int nRandomInt)
+{
     std::string sSpendSecret = "cR6XNDL7dwDqAfBUNQqcoYkDbCy3xQwsFLh6tfw4EjBTUPaDaNdX";
     std::string sScanSecret = "cU72zZjUGEwp3uUdr1diuWmLbTUiv9zeThsNE5cVYFqZuySE8Gry";
     std::string sSpendPublic = "039cfeaef8697b6bb4e5a7af6b5b6bb0884c41d687cd71410e233447571e1dfeea";
@@ -60,9 +60,9 @@ std::string TestBuildWalletTransaction(int nRandomInt) {
     std::vector<std::pair<int, CWatchOnlyTx>> vTxes;
     FetchWatchOnlyTransactions(scan_secret, vTxes);
 
-    //Build correct vector
+    // Build correct vector
     std::vector<CWatchOnlyTx> myTxes;
-    for(const auto& pair: vTxes){
+    for (const auto& pair : vTxes) {
         myTxes.push_back(pair.second);
     }
 
@@ -85,7 +85,7 @@ std::string TestBuildWalletTransaction(int nRandomInt) {
 
     // Get Amount and blinds of all spendable txes
     std::vector<CWatchOnlyTx> vFinalTx;
-    if (!GetAmountAndBlindForUnspentTx(vFinalTx, vUnspentTxes, spend_secret, scan_secret, spend_pubkey,errorMsg)) {
+    if (!GetAmountAndBlindForUnspentTx(vFinalTx, vUnspentTxes, spend_secret, scan_secret, spend_pubkey, errorMsg)) {
         LogPrintf("Failed - %s\n", errorMsg);
         return errorMsg;
     }
@@ -94,7 +94,7 @@ std::string TestBuildWalletTransaction(int nRandomInt) {
     std::set<int64_t> setIndexSelected;
     std::vector<CLightWalletAnonOutputData> vecSelectedOutputs;
     std::string sError;
-    GetMainWallet()->GetAnonWallet()->GetRandomHidingOutputs(11, 11, setIndexSelected,vecSelectedOutputs, errorMsg);
+    GetMainWallet()->GetAnonWallet()->GetRandomHidingOutputs(11, 11, setIndexSelected, vecSelectedOutputs, errorMsg);
 
     std::string txHex = "";
 
@@ -108,7 +108,6 @@ std::string TestBuildWalletTransaction(int nRandomInt) {
 
 bool BuildLightWalletTransaction(const std::vector<std::string>& args, const std::vector<CWatchOnlyTx>& vSpendableTx, const std::vector<CLightWalletAnonOutputData>& vDummyOutputs, std::string& txHex, std::string& errorMsg)
 {
-
     // We need to direct this to spend the correct outputs.
     // If the vSpendableTx has Anon and Stealth outputs we will use Anon
 
@@ -141,8 +140,6 @@ bool BuildLightWalletTransaction(const std::vector<std::string>& args, const std
         errorMsg = "No Anon or Stealth txes given to build transaction";
         return false;
     }
-
-
 }
 
 
@@ -177,7 +174,7 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
     OutputTypes outputType;
     CTxDestination destination;
 
-    if (!GetTypeOut(address, args[3], outputType, destination, errorMsg)){
+    if (!GetTypeOut(address, args[3], outputType, destination, errorMsg)) {
         LogPrintf("Failed - %s\n", errorMsg);
         return false;
     }
@@ -259,7 +256,7 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
 
     // Get total value we are sending in vecSend
     CAmount nValue = 0;
-    for (const auto &r : vecSend) {
+    for (const auto& r : vecSend) {
         nValue += r.nAmount;
         if (nValue < 0 || r.nAmount < 0) {
             LogPrintf("Transaction amounts must not be negative");
@@ -300,8 +297,8 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
     CAmount nValueOutPlain = 0;
     int nChangePosInOut = -1;
 
-    std::vector<std::vector<std::vector<int64_t> > > vMI;
-    std::vector<std::vector<uint8_t> > vInputBlinds;
+    std::vector<std::vector<std::vector<int64_t>>> vMI;
+    std::vector<std::vector<uint8_t>> vInputBlinds;
     std::vector<size_t> vSecretColumns;
 
     size_t nSubFeeTries = 100;
@@ -346,7 +343,7 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
 
     size_t nRemainingInputs = vSelectedTxes.size();
 
-    //Add blank anon inputs as anon inputs
+    // Add blank anon inputs as anon inputs
     for (int k = 0; k < nTxRingSigs; ++k) {
         size_t nInputs = (k == nTxRingSigs - 1 ? nRemainingInputs : nInputsPerSig);
         CTxIn txin;
@@ -385,7 +382,7 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
     }
 
     // Add in dummy outputs
-    LightWalletFillInDummyOutputs(txNew,vDummyOutputs,vSecretColumns,vMI);
+    LightWalletFillInDummyOutputs(txNew, vDummyOutputs, vSecretColumns, vMI);
 
     // Get the amout of bytes
     nBytes = GetVirtualTransactionSize(txNew);
@@ -400,7 +397,7 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
         // selected to meet nFeeNeeded result in a transaction that
         // requires less fee than the prior iteration.
         if (nFeeRet > nFeeNeeded && nChangePosInOut != -1 && nSubtractFeeFromAmount == 0) {
-            auto &r = vecSend[nChangePosInOut];
+            auto& r = vecSend[nChangePosInOut];
 
             CAmount extraFeePaid = nFeeRet - nFeeNeeded;
 
@@ -422,7 +419,7 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
 
     // Try to reduce change to include necessary fee
     if (nChangePosInOut != -1 && nSubtractFeeFromAmount == 0) {
-        auto &r = vecSend[nChangePosInOut];
+        auto& r = vecSend[nChangePosInOut];
         CAmount additionalFeeNeeded = nFeeNeeded - nFeeRet;
         if (r.nAmount >= MIN_FINAL_CHANGE + additionalFeeNeeded) {
             r.nAmount -= additionalFeeNeeded;
@@ -438,13 +435,13 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
     nValueOutPlain += nFeeRet;
 
     // Remove scriptSigs to eliminate the fee calculation dummy signatures
-    for (auto &txin : txNew.vin) {
+    for (auto& txin : txNew.vin) {
         txin.scriptData.stack[0].resize(0);
         txin.scriptWitness.stack[1].resize(0);
     }
 
-    std::vector<const uint8_t *> vpOutCommits;
-    std::vector<const uint8_t *> vpOutBlinds;
+    std::vector<const uint8_t*> vpOutCommits;
+    std::vector<const uint8_t*> vpOutBlinds;
     std::vector<uint8_t> vBlindPlain;
     secp256k1_pedersen_commitment plainCommitment;
     vBlindPlain.resize(32);
@@ -452,7 +449,7 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
 
     if (nValueOutPlain > 0) {
         if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainCommitment, &vBlindPlain[0],
-                                       (uint64_t) nValueOutPlain, secp256k1_generator_h)) {
+                (uint64_t)nValueOutPlain, secp256k1_generator_h)) {
             LogPrintf("Pedersen Commit failed for plain out.");
             errorMsg = "Pedersen Commit failed for plain out.";
             return false;
@@ -462,13 +459,13 @@ bool BuildLightWalletRingCTTransaction(const std::vector<std::string>& args, con
         vpOutBlinds.push_back(&vBlindPlain[0]);
     }
 
-    if (!LightWalletUpdateChangeOutputCommitment(txNew, vecSend, nChangePosInOut, vpOutCommits, vpOutBlinds, errorMsg) ) {
+    if (!LightWalletUpdateChangeOutputCommitment(txNew, vecSend, nChangePosInOut, vpOutCommits, vpOutBlinds, errorMsg)) {
         LogPrintf("Failed LightWalletUpdateChangeOutputCommitment - %s\n", errorMsg);
         return false;
     }
 
-    //Add actual fee to CT Fee output
-    std::vector<uint8_t> &vData = ((CTxOutData *) txNew.vpout[0].get())->vData;
+    // Add actual fee to CT Fee output
+    std::vector<uint8_t>& vData = ((CTxOutData*)txNew.vpout[0].get())->vData;
     vData.resize(1);
     if (0 != PutVarInt(vData, nFeeRet)) {
         LogPrintf("Failed to add fee to transaction.\n");
@@ -513,7 +510,7 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
     OutputTypes outputType;
     CTxDestination destination;
 
-    if (!GetTypeOut(address, args[3], outputType, destination, errorMsg)){
+    if (!GetTypeOut(address, args[3], outputType, destination, errorMsg)) {
         LogPrintf("Failed - %s\n", errorMsg);
         return false;
     }
@@ -595,7 +592,7 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
 
     // Get total value we are sending in vecSend
     CAmount nValue = 0;
-    for (const auto &r : vecSend) {
+    for (const auto& r : vecSend) {
         nValue += r.nAmount;
         if (nValue < 0 || r.nAmount < 0) {
             LogPrintf("Transaction amounts must not be negative");
@@ -683,8 +680,8 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
     // to avoid conflicting with other possible uses of nSequence,
     // and in the spirit of "smallest possible change from prior
     // behavior."
-    for (const auto &coin : vSelectedTxes) {
-        const uint256 &txhash = coin.tx_hash;
+    for (const auto& coin : vSelectedTxes) {
+        const uint256& txhash = coin.tx_hash;
         const uint32_t nSequence = CTxIn::SEQUENCE_FINAL - 1;
         txNew.vin.push_back(CTxIn(txhash, coin.tx_index, CScript(), nSequence));
     }
@@ -719,7 +716,7 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
         // selected to meet nFeeNeeded result in a transaction that
         // requires less fee than the prior iteration.
         if (nFeeRet > nFeeNeeded && nChangePosInOut != -1 && nSubtractFeeFromAmount == 0) {
-            auto &r = vecSend[nChangePosInOut];
+            auto& r = vecSend[nChangePosInOut];
 
             CAmount extraFeePaid = nFeeRet - nFeeNeeded;
 
@@ -741,7 +738,7 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
 
     // Try to reduce change to include necessary fee
     if (nChangePosInOut != -1 && nSubtractFeeFromAmount == 0) {
-        auto &r = vecSend[nChangePosInOut];
+        auto& r = vecSend[nChangePosInOut];
         CAmount additionalFeeNeeded = nFeeNeeded - nFeeRet;
         if (r.nAmount >= MIN_FINAL_CHANGE + additionalFeeNeeded) {
             r.nAmount -= additionalFeeNeeded;
@@ -761,9 +758,9 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
     std::vector<uint8_t*> vpBlinds;
 
     int nIn = 0;
-    for (const auto &coin : vSelectedWatchOnly) {
-        auto &txin = txNew.vin[nIn];
-        const uint256 &txhash = coin.tx_hash;
+    for (const auto& coin : vSelectedWatchOnly) {
+        auto& txin = txNew.vin[nIn];
+        const uint256& txhash = coin.tx_hash;
 
         COutPoint prevout(txhash, coin.tx_index);
         memcpy(&vInputBlinds[nIn * 32], &vSelectedTxes[nIn].blind, 32);
@@ -781,17 +778,17 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
     memset(&vBlindPlain[0], 0, 32);
 
 
-    //secp256k1_pedersen_commitment plainCommitment;
+    // secp256k1_pedersen_commitment plainCommitment;
     if (nValueOutPlain > 0) {
         vpBlinds.push_back(&vBlindPlain[0]);
-        //if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainCommitment, &vBlindPlain[0], (uint64_t) nValueOutPlain, secp256k1_generator_h))
-        //    return errorN(1, sError, __func__, "secp256k1_pedersen_commit failed for plain out.");
+        // if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainCommitment, &vBlindPlain[0], (uint64_t) nValueOutPlain, secp256k1_generator_h))
+        //     return errorN(1, sError, __func__, "secp256k1_pedersen_commit failed for plain out.");
     }
 
     // Update the change output commitment if it exists, else last blinded
     int nLastBlinded = -1;
     for (size_t i = 0; i < vecSend.size(); ++i) {
-        auto &r = vecSend[i];
+        auto& r = vecSend[i];
 
         if (r.nType == OUTPUT_CT || r.nType == OUTPUT_RINGCT) {
             if ((int)i != nChangePosInOut) {
@@ -809,7 +806,7 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
     }
 
     if (nLastBlinded != -1) {
-        auto &recipient = vecSend[nLastBlinded];
+        auto& recipient = vecSend[nLastBlinded];
 
         if (recipient.nType != OUTPUT_CT && recipient.nType != OUTPUT_RINGCT) {
             errorMsg = "nLastBlinded not blind.";
@@ -823,11 +820,11 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
             return false;
         }
 
-        CTxOutBase *pout = (CTxOutBase*)txNew.vpout[recipient.n].get();
-        //ADD CT DATA
+        CTxOutBase* pout = (CTxOutBase*)txNew.vpout[recipient.n].get();
+        // ADD CT DATA
         {
-            secp256k1_pedersen_commitment *pCommitment = pout->GetPCommitment();
-            std::vector<uint8_t> *pvRangeproof = pout->GetPRangeproof();
+            secp256k1_pedersen_commitment* pCommitment = pout->GetPCommitment();
+            std::vector<uint8_t>* pvRangeproof = pout->GetPRangeproof();
 
             if (!pCommitment || !pvRangeproof) {
                 errorMsg = "Unable to get CT pointers for output type";
@@ -835,8 +832,8 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
             }
 
             uint64_t nValue = recipient.nAmount;
-            if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, pCommitment, (uint8_t *) &recipient.vBlind[0],
-                                           nValue, secp256k1_generator_h)) {
+            if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, pCommitment, (uint8_t*)&recipient.vBlind[0],
+                    nValue, secp256k1_generator_h)) {
                 errorMsg = "Pedersen commit failed";
                 return false;
             }
@@ -858,7 +855,7 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
                 recipient.nonce = nonce;
             }
 
-            const char *message = recipient.sNarration.c_str();
+            const char* message = recipient.sNarration.c_str();
             size_t mlen = strlen(message);
 
             size_t nRangeProofLen = 5134;
@@ -880,23 +877,22 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
             }
 
             if (1 != secp256k1_rangeproof_sign(secp256k1_ctx_blind,
-                                               &(*pvRangeproof)[0], &nRangeProofLen,
-                                               min_value, pCommitment,
-                                               &recipient.vBlind[0], nonce.begin(),
-                                               ct_exponent, ct_bits, nValue,
-                                               (const unsigned char *) message, mlen,
-                                               nullptr, 0, secp256k1_generator_h)) {
+                         &(*pvRangeproof)[0], &nRangeProofLen,
+                         min_value, pCommitment,
+                         &recipient.vBlind[0], nonce.begin(),
+                         ct_exponent, ct_bits, nValue,
+                         (const unsigned char*)message, mlen,
+                         nullptr, 0, secp256k1_generator_h)) {
                 errorMsg = "Failed to sign range proof.";
                 return false;
             }
 
             pvRangeproof->resize(nRangeProofLen);
         }
-
     }
 
-    //Add actual fee to CT Fee output
-    std::vector<uint8_t> &vData = ((CTxOutData *) txNew.vpout[0].get())->vData;
+    // Add actual fee to CT Fee output
+    std::vector<uint8_t>& vData = ((CTxOutData*)txNew.vpout[0].get())->vData;
     vData.resize(1);
     if (0 != PutVarInt(vData, nFeeRet)) {
         LogPrintf("Failed to add fee to transaction.\n");
@@ -907,8 +903,8 @@ bool BuildLightWalletStealthTransaction(const std::vector<std::string>& args, co
     // Reset nIn
     nIn = 0;
 
-    for (const auto &coin : vSelectedWatchOnly) {
-        const uint256 &txhash = coin.tx_hash;
+    for (const auto& coin : vSelectedWatchOnly) {
+        const uint256& txhash = coin.tx_hash;
 
         CScript scriptPubKey = coin.ctout.scriptPubKey;
 
@@ -958,7 +954,8 @@ bool GetTypeOut(const CBitcoinAddress& address, const std::string& strAddress, O
     return true;
 }
 
-bool ParseArgs(const std::vector<std::string>& args, CKey& spend_secret, CKey& scan_secret, CPubKey& spend_pubkey, CBitcoinAddress& address, CAmount& nValue, std::string& errorMsg) {
+bool ParseArgs(const std::vector<std::string>& args, CKey& spend_secret, CKey& scan_secret, CPubKey& spend_pubkey, CBitcoinAddress& address, CAmount& nValue, std::string& errorMsg)
+{
     // Decode params 0
     GetSecretFromString(args[0], spend_secret);
 
@@ -1007,6 +1004,8 @@ bool GetDestinationKeyForOutput(CKey& destinationKey, const CWatchOnlyTx& tx, co
             return false;
         }
 
+        LogPrintf("mdest: %s", HexStr(destinationKey.GetPubKey().begin()));
+        LogPrintf("mdest id: %s", HexStr(destinationKey.GetPubKey().GetID().begin()));
         if (destinationKey.GetPubKey().GetID() != idk) {
             errorMsg = "GetDestinationKeyForOutput failed to generate correct shared secret";
             return false;
@@ -1056,7 +1055,7 @@ bool GetKeyImagesFromAPITransactions(std::vector<std::pair<CCmpPubKey, CWatchOnl
     for (int i = 0; i < vectorWatchOnlyTxFromAPI.size(); i++) {
         CWatchOnlyTx tx = vectorWatchOnlyTxFromAPI[i];
 
-        if (tx.type == CWatchOnlyTx::STEALTH){
+        if (tx.type == CWatchOnlyTx::STEALTH) {
             CCmpPubKey kizero;
             keyimages.push_back(std::make_pair(kizero, tx));
             continue;
@@ -1070,7 +1069,7 @@ bool GetKeyImagesFromAPITransactions(std::vector<std::pair<CCmpPubKey, CWatchOnl
         // Keyimage is required for the tx hash
         CCmpPubKey ki;
         if (secp256k1_get_keyimage(secp256k1_ctx_blind, ki.ncbegin(), tx.ringctout.pk.begin(),
-                                   destinationKey.begin()) == 0) {
+                destinationKey.begin()) == 0) {
             keyimages.push_back(std::make_pair(ki, tx));
         } else {
             errorMsg = "Failed to get keyimage for watchonlytx";
@@ -1084,7 +1083,6 @@ bool GetKeyImagesFromAPITransactions(std::vector<std::pair<CCmpPubKey, CWatchOnl
 bool GetAmountAndBlindForUnspentTx(std::vector<CWatchOnlyTx>& vTxes, const std::vector<CWatchOnlyTx>& vectorUnspentWatchonlyTx, const CKey& spend_secret, const CKey& scan_secret, const CPubKey& spend_pubkey, std::string& errorMsg)
 {
     for (int i = 0; i < vectorUnspentWatchonlyTx.size(); i++) {
-
         CWatchOnlyTx currenttx = vectorUnspentWatchonlyTx[i];
 
         CKey destinationKey;
@@ -1115,25 +1113,25 @@ bool GetAmountAndBlindForUnspentTx(std::vector<CWatchOnlyTx>& vTxes, const std::
         uint64_t amountOut;
         if (currenttx.type == CWatchOnlyTx::ANON) {
             if (1 != secp256k1_rangeproof_rewind(secp256k1_ctx_blind,
-                                                 blindOut, &amountOut, msg, &mlen, nonce.begin(),
-                                                 &min_value, &max_value,
-                                                 &currenttx.ringctout.commitment,
-                                                 currenttx.ringctout.vRangeproof.data(),
-                                                 currenttx.ringctout.vRangeproof.size(),
-                                                 nullptr, 0,
-                                                 secp256k1_generator_h)) {
+                         blindOut, &amountOut, msg, &mlen, nonce.begin(),
+                         &min_value, &max_value,
+                         &currenttx.ringctout.commitment,
+                         currenttx.ringctout.vRangeproof.data(),
+                         currenttx.ringctout.vRangeproof.size(),
+                         nullptr, 0,
+                         secp256k1_generator_h)) {
                 errorMsg = "failed to get the amount";
                 return false;
             }
         } else if (currenttx.type == CWatchOnlyTx::STEALTH) {
             if (1 != secp256k1_rangeproof_rewind(secp256k1_ctx_blind,
-                                                 blindOut, &amountOut, msg, &mlen, nonce.begin(),
-                                                 &min_value, &max_value,
-                                                 &currenttx.ctout.commitment,
-                                                 currenttx.ctout.vRangeproof.data(),
-                                                 currenttx.ctout.vRangeproof.size(),
-                                                 nullptr, 0,
-                                                 secp256k1_generator_h)) {
+                         blindOut, &amountOut, msg, &mlen, nonce.begin(),
+                         &min_value, &max_value,
+                         &currenttx.ctout.commitment,
+                         currenttx.ctout.vRangeproof.data(),
+                         currenttx.ctout.vRangeproof.size(),
+                         nullptr, 0,
+                         secp256k1_generator_h)) {
                 errorMsg = "failed to get the amount";
                 return false;
             }
@@ -1157,7 +1155,7 @@ bool CheckAmounts(const CAmount& nValueOut, const std::vector<CWatchOnlyTx>& vSp
         LogPrintf("Getting amounts from inputs: %d\n", tx.nAmount);
         nSum += tx.nAmount;
 
-        if ((nValueOut + CENT) < nSum ) {
+        if ((nValueOut + CENT) < nSum) {
             return true;
         }
     }
@@ -1167,7 +1165,7 @@ bool CheckAmounts(const CAmount& nValueOut, const std::vector<CWatchOnlyTx>& vSp
 
 bool BuildRecipientData(std::vector<CTempRecipient>& vecSend, std::string& errorMsg)
 {
-    for (CTempRecipient &r: vecSend) {
+    for (CTempRecipient& r : vecSend) {
         if (r.nType == OUTPUT_STANDARD) {
             if (r.address.type() == typeid(CExtKeyPair)) {
                 errorMsg = "sending to extkeypair";
@@ -1278,10 +1276,10 @@ bool BuildChangeData(std::vector<CTempRecipient>& vecSend, int& nChangePositionO
     if (nChangePositionOut < 0) {
         nChangePositionOut = GetRandInt(vecSend.size() + 1);
     } else {
-        nChangePositionOut = std::min(nChangePositionOut, (int) vecSend.size());
+        nChangePositionOut = std::min(nChangePositionOut, (int)vecSend.size());
     }
 
-    if (nChangePositionOut < (int) vecSend.size() && vecSend[nChangePositionOut].nType == OUTPUT_DATA) {
+    if (nChangePositionOut < (int)vecSend.size() && vecSend[nChangePositionOut].nType == OUTPUT_DATA) {
         nChangePositionOut++;
     }
 
@@ -1300,9 +1298,8 @@ bool SelectSpendableTxForValue(std::vector<CWatchOnlyTx>& vSpendTheseTx, CAmount
     bool fMultipleInput = false;
 
 
-
     // TODO - this can be improved, but works for now
-    for (const CWatchOnlyTx &tx : vSpendableTx) {
+    for (const CWatchOnlyTx& tx : vSpendableTx) {
         LogPrintf("tx amounts %d, ", tx.nAmount);
         if (tx.nAmount > nValueOut) {
             tempsingleamountchange = tx.nAmount - nValueOut;
@@ -1319,7 +1316,7 @@ bool SelectSpendableTxForValue(std::vector<CWatchOnlyTx>& vSpendTheseTx, CAmount
         vSpendTheseTx.clear();
         // We can use a single input for this transaction
         CAmount currentSelected = 0;
-        for (const CWatchOnlyTx &tx : vSpendableTx) {
+        for (const CWatchOnlyTx& tx : vSpendableTx) {
             currentSelected += tx.nAmount;
             vSpendTheseTx.emplace_back(tx);
             if (currentSelected > nValueOut) {
@@ -1347,7 +1344,7 @@ bool LightWalletAddCTData(CMutableTransaction& txNew, std::vector<CTempRecipient
 {
     bool fFirst = true;
     for (size_t i = 0; i < vecSend.size(); ++i) {
-        auto &recipient = vecSend[i];
+        auto& recipient = vecSend[i];
 
         // TODO - do we need this if fSubtractFeeFromAmount is never true? Keep this as we might enable that feature later
         // Only need to worry about this if fSubtractFeeFromAmount is true, which it isn't
@@ -1376,11 +1373,11 @@ bool LightWalletAddCTData(CMutableTransaction& txNew, std::vector<CTempRecipient
                 GetStrongRandBytes(&recipient.vBlind[0], 32);
             }
 
-            //TODO  Can we take advantage of the AddCTData function? It looks like it is the exact same code, copy pasted
-            //ADD CT DATA
+            // TODO  Can we take advantage of the AddCTData function? It looks like it is the exact same code, copy pasted
+            // ADD CT DATA
             {
-                secp256k1_pedersen_commitment *pCommitment = txbout->GetPCommitment();
-                std::vector<uint8_t> *pvRangeproof = txbout->GetPRangeproof();
+                secp256k1_pedersen_commitment* pCommitment = txbout->GetPCommitment();
+                std::vector<uint8_t>* pvRangeproof = txbout->GetPRangeproof();
 
                 if (!pCommitment || !pvRangeproof) {
                     errorMsg = "Unable to get CT pointers for output type";
@@ -1388,8 +1385,8 @@ bool LightWalletAddCTData(CMutableTransaction& txNew, std::vector<CTempRecipient
                 }
 
                 uint64_t nValue = recipient.nAmount;
-                if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, pCommitment, (uint8_t *) &recipient.vBlind[0],
-                                               nValue, secp256k1_generator_h)) {
+                if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, pCommitment, (uint8_t*)&recipient.vBlind[0],
+                        nValue, secp256k1_generator_h)) {
                     errorMsg = "Pedersen commit failed";
                     return false;
                 }
@@ -1411,7 +1408,7 @@ bool LightWalletAddCTData(CMutableTransaction& txNew, std::vector<CTempRecipient
                     recipient.nonce = nonce;
                 }
 
-                const char *message = recipient.sNarration.c_str();
+                const char* message = recipient.sNarration.c_str();
                 size_t mlen = strlen(message);
 
                 size_t nRangeProofLen = 5134;
@@ -1433,12 +1430,12 @@ bool LightWalletAddCTData(CMutableTransaction& txNew, std::vector<CTempRecipient
                 }
 
                 if (1 != secp256k1_rangeproof_sign(secp256k1_ctx_blind,
-                                                   &(*pvRangeproof)[0], &nRangeProofLen,
-                                                   min_value, pCommitment,
-                                                   &recipient.vBlind[0], nonce.begin(),
-                                                   ct_exponent, ct_bits, nValue,
-                                                   (const unsigned char *) message, mlen,
-                                                   nullptr, 0, secp256k1_generator_h)) {
+                             &(*pvRangeproof)[0], &nRangeProofLen,
+                             min_value, pCommitment,
+                             &recipient.vBlind[0], nonce.begin(),
+                             ct_exponent, ct_bits, nValue,
+                             (const unsigned char*)message, mlen,
+                             nullptr, 0, secp256k1_generator_h)) {
                     errorMsg = "Failed to sign range proof.";
                     return false;
                 }
@@ -1457,7 +1454,7 @@ bool LightWalletAddRealOutputs(CMutableTransaction& txNew, std::vector<CWatchOnl
     std::set<int64_t> setHave; // Anon prev-outputs can only be used once per transaction.
     size_t nTotalInputs = 0;
     for (size_t l = 0; l < txNew.vin.size(); ++l) { // Must add real outputs to setHave before picking decoys
-        auto &txin = txNew.vin[l];
+        auto& txin = txNew.vin[l];
         uint32_t nSigInputs, nSigRingSize;
         txin.GetAnonInfo(nSigInputs, nSigRingSize);
 
@@ -1481,8 +1478,8 @@ bool LightWalletAddRealOutputs(CMutableTransaction& txNew, std::vector<CWatchOnl
                 vMI[l][k].resize(nSigRingSize);
                 for (size_t i = 0; i < nSigRingSize; ++i) {
                     if (i == vSecretColumns[l]) {
-                        const auto &coin = vSelectedTxes[k];
-                        const uint256 &txhash = vSelectedTxes[k].tx_hash;
+                        const auto& coin = vSelectedTxes[k];
+                        const uint256& txhash = vSelectedTxes[k].tx_hash;
 
                         CCmpPubKey pk = vSelectedTxes[k].ringctout.pk;
                         memcpy(&vInputBlinds[l][k * 32], &vSelectedTxes[k].blind, 32);
@@ -1509,7 +1506,7 @@ void LightWalletFillInDummyOutputs(CMutableTransaction& txNew, const std::vector
 {
     // Fill in dummy signatures for fee calculation.
     for (size_t l = 0; l < txNew.vin.size(); ++l) {
-        auto &txin = txNew.vin[l];
+        auto& txin = txNew.vin[l];
         uint32_t nSigInputs, nSigRingSize;
         txin.GetAnonInfo(nSigInputs, nSigRingSize);
 
@@ -1522,7 +1519,7 @@ void LightWalletFillInDummyOutputs(CMutableTransaction& txNew, const std::vector
                         continue;
                     }
 
-                    LogPrintf("looking at vector index :%d, setting index for dummy: %d\n",nCurrentLocation, vDummyOutputs[nCurrentLocation].index);
+                    LogPrintf("looking at vector index :%d, setting index for dummy: %d\n", nCurrentLocation, vDummyOutputs[nCurrentLocation].index);
                     vMI[l][k][i] = vDummyOutputs[nCurrentLocation].index;
                     nCurrentLocation++;
                 }
@@ -1542,21 +1539,20 @@ void LightWalletFillInDummyOutputs(CMutableTransaction& txNew, const std::vector
         txin.scriptWitness.stack.emplace_back(vPubkeyMatrixIndices);
 
         std::vector<uint8_t> vDL((1 + (nSigInputs + 1) * nSigRingSize) *
-                                 32 // extra element for C, extra row for commitment row
-                                 + (txNew.vin.size() > 1 ? 33
-                                                         : 0)); // extra commitment for split value if multiple sigs
+                                     32                              // extra element for C, extra row for commitment row
+                                 + (txNew.vin.size() > 1 ? 33 : 0)); // extra commitment for split value if multiple sigs
         txin.scriptWitness.stack.emplace_back(vDL);
     }
 }
 
 
-bool LightWalletUpdateChangeOutputCommitment(CMutableTransaction& txNew, std::vector<CTempRecipient>& vecSend, int& nChangePositionOut, std::vector<const uint8_t *>& vpOutCommits, std::vector<const uint8_t *>& vpOutBlinds, std::string& errorMsg)
+bool LightWalletUpdateChangeOutputCommitment(CMutableTransaction& txNew, std::vector<CTempRecipient>& vecSend, int& nChangePositionOut, std::vector<const uint8_t*>& vpOutCommits, std::vector<const uint8_t*>& vpOutBlinds, std::string& errorMsg)
 {
     // Update the change output commitment
     for (size_t i = 0; i < vecSend.size(); ++i) {
-        auto &r = vecSend[i];
+        auto& r = vecSend[i];
 
-        if ((int) i == nChangePositionOut) {
+        if ((int)i == nChangePositionOut) {
             // Change amount may have changed
 
             if (r.nType != OUTPUT_RINGCT) {
@@ -1573,8 +1569,8 @@ bool LightWalletUpdateChangeOutputCommitment(CMutableTransaction& txNew, std::ve
             {
                 CTxOutBase* txout = txNew.vpout[r.n].get();
 
-                secp256k1_pedersen_commitment *pCommitment = txout->GetPCommitment();
-                std::vector<uint8_t> *pvRangeproof = txout->GetPRangeproof();
+                secp256k1_pedersen_commitment* pCommitment = txout->GetPCommitment();
+                std::vector<uint8_t>* pvRangeproof = txout->GetPRangeproof();
 
                 if (!pCommitment || !pvRangeproof) {
                     errorMsg = "Unable to get CT pointers for output type";
@@ -1582,8 +1578,8 @@ bool LightWalletUpdateChangeOutputCommitment(CMutableTransaction& txNew, std::ve
                 }
 
                 uint64_t nValue = r.nAmount;
-                if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, pCommitment, (uint8_t *) &r.vBlind[0], nValue,
-                                               secp256k1_generator_h)) {
+                if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, pCommitment, (uint8_t*)&r.vBlind[0], nValue,
+                        secp256k1_generator_h)) {
                     errorMsg = "Pedersen commit failed.";
                     return false;
                 }
@@ -1605,7 +1601,7 @@ bool LightWalletUpdateChangeOutputCommitment(CMutableTransaction& txNew, std::ve
                     r.nonce = nonce;
                 }
 
-                const char *message = r.sNarration.c_str();
+                const char* message = r.sNarration.c_str();
                 size_t mlen = strlen(message);
 
                 size_t nRangeProofLen = 5134;
@@ -1627,12 +1623,12 @@ bool LightWalletUpdateChangeOutputCommitment(CMutableTransaction& txNew, std::ve
                 }
 
                 if (1 != secp256k1_rangeproof_sign(secp256k1_ctx_blind,
-                                                   &(*pvRangeproof)[0], &nRangeProofLen,
-                                                   min_value, pCommitment,
-                                                   &r.vBlind[0], nonce.begin(),
-                                                   ct_exponent, ct_bits, nValue,
-                                                   (const unsigned char *) message, mlen,
-                                                   nullptr, 0, secp256k1_generator_h)) {
+                             &(*pvRangeproof)[0], &nRangeProofLen,
+                             min_value, pCommitment,
+                             &r.vBlind[0], nonce.begin(),
+                             ct_exponent, ct_bits, nValue,
+                             (const unsigned char*)message, mlen,
+                             nullptr, 0, secp256k1_generator_h)) {
                     errorMsg = "Failed to sign range proof";
                     return false;
                 }
@@ -1655,12 +1651,12 @@ bool LightWalletInsertKeyImages(CMutableTransaction& txNew, std::vector<std::pai
 {
     int rv;
     for (size_t l = 0; l < txNew.vin.size(); ++l) {
-        auto &txin = txNew.vin[l];
+        auto& txin = txNew.vin[l];
 
         uint32_t nSigInputs, nSigRingSize;
         txin.GetAnonInfo(nSigInputs, nSigRingSize);
 
-        std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
+        std::vector<uint8_t>& vKeyImages = txin.scriptData.stack[0];
         vKeyImages.resize(33 * nSigInputs);
 
         for (size_t k = 0; k < nSigInputs; ++k) {
@@ -1706,13 +1702,13 @@ bool LightWalletInsertKeyImages(CMutableTransaction& txNew, std::vector<std::pai
 }
 
 
-bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vector<uint8_t>>& vInputBlinds, std::vector<const uint8_t *>& vpOutCommits, std::vector<const uint8_t *>& vpOutBlinds, std::vector<CKey>& vSplitCommitBlindingKeys, const std::vector<std::pair<int64_t, CKey>>& vSigningKeys, const std::vector<CLightWalletAnonOutputData>& vDummyOutputs, const std::vector<CWatchOnlyTx>& vSelectedTx, const std::vector<size_t>& vSecretColumns, const std::vector<std::vector<std::vector<int64_t>>>& vMI, std::string& errorMsg)
+bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vector<uint8_t>>& vInputBlinds, std::vector<const uint8_t*>& vpOutCommits, std::vector<const uint8_t*>& vpOutBlinds, std::vector<CKey>& vSplitCommitBlindingKeys, const std::vector<std::pair<int64_t, CKey>>& vSigningKeys, const std::vector<CLightWalletAnonOutputData>& vDummyOutputs, const std::vector<CWatchOnlyTx>& vSelectedTx, const std::vector<size_t>& vSecretColumns, const std::vector<std::vector<std::vector<int64_t>>>& vMI, std::string& errorMsg)
 {
     size_t nTotalInputs = 0;
     int rv;
 
     for (size_t l = 0; l < txNew.vin.size(); ++l) {
-        auto &txin = txNew.vin[l];
+        auto& txin = txNew.vin[l];
 
         uint32_t nSigInputs, nSigRingSize;
         txin.GetAnonInfo(nSigInputs, nSigRingSize);
@@ -1724,18 +1720,18 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
         GetStrongRandBytes(randSeed, 32);
 
         std::vector<CKey> vsk(nSigInputs);
-        std::vector<const uint8_t *> vpsk(nRows);
+        std::vector<const uint8_t*> vpsk(nRows);
 
         std::vector<uint8_t> vm(nCols * nRows * 33);
         std::vector<secp256k1_pedersen_commitment> vCommitments;
         vCommitments.reserve(nCols * nSigInputs);
-        std::vector<const uint8_t *> vpInCommits(nCols * nSigInputs);
-        std::vector<const uint8_t *> vpBlinds;
+        std::vector<const uint8_t*> vpInCommits(nCols * nSigInputs);
+        std::vector<const uint8_t*> vpBlinds;
 
 
-        std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
+        std::vector<uint8_t>& vKeyImages = txin.scriptData.stack[0];
 
-        LogPrintf("nSigInputs %d , nCols %d\n",nSigInputs, nCols);
+        LogPrintf("nSigInputs %d , nCols %d\n", nSigInputs, nCols);
         for (size_t k = 0; k < nSigInputs; ++k) {
             for (size_t i = 0; i < nCols; ++i) {
                 int64_t nIndex = vMI[l][k][i];
@@ -1743,7 +1739,7 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
                 // Actual output
                 if (i == vSecretColumns[l]) {
                     bool fFoundKey = false;
-                    for (const auto& pair: vSigningKeys) {
+                    for (const auto& pair : vSigningKeys) {
                         if (pair.first == nIndex) {
                             vsk[k] = pair.second;
                             fFoundKey = true;
@@ -1800,15 +1796,15 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
         memset(blindSum, 0, 32);
         vpsk[nRows - 1] = blindSum;
 
-        std::vector<uint8_t> &vDL = txin.scriptWitness.stack[1];
+        std::vector<uint8_t>& vDL = txin.scriptWitness.stack[1];
 
         if (txNew.vin.size() == 1) {
             vDL.resize((1 + (nSigInputs + 1) * nSigRingSize) * 32); // extra element for C, extra row for commitment row
             vpBlinds.insert(vpBlinds.end(), vpOutBlinds.begin(), vpOutBlinds.end());
 
             if (0 != (rv = secp256k1_prepare_mlsag(&vm[0], blindSum,
-                                                   vpOutCommits.size(), vpOutCommits.size(), nCols, nRows,
-                                                   &vpInCommits[0], &vpOutCommits[0], &vpBlinds[0]))) {
+                          vpOutCommits.size(), vpOutCommits.size(), nCols, nRows,
+                          &vpInCommits[0], &vpOutCommits[0], &vpBlinds[0]))) {
                 errorMsg = "Failed to prepare mlsag";
                 return false;
             }
@@ -1817,17 +1813,17 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
             vDL.resize((1 + (nSigInputs + 1) * nSigRingSize) * 32 + 33);
 
             if (l == txNew.vin.size() - 1) {
-                std::vector<const uint8_t *> vpAllBlinds = vpOutBlinds;
+                std::vector<const uint8_t*> vpAllBlinds = vpOutBlinds;
 
                 for (size_t k = 0; k < l; ++k) {
                     vpAllBlinds.push_back(vSplitCommitBlindingKeys[k].begin());
                 }
 
                 if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind,
-                                                  vSplitCommitBlindingKeys[l].begin_nc(),
-                                                  &vpAllBlinds[0], vpAllBlinds.size(),
-                                                  vpOutBlinds.size())) {
-                    errorMsg ="Pedersen blind sum failed.";
+                        vSplitCommitBlindingKeys[l].begin_nc(),
+                        &vpAllBlinds[0], vpAllBlinds.size(),
+                        vpOutBlinds.size())) {
+                    errorMsg = "Pedersen blind sum failed.";
                     return false;
                 }
             } else {
@@ -1843,19 +1839,19 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
 
             secp256k1_pedersen_commitment splitInputCommit;
             if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &splitInputCommit,
-                                           (uint8_t *) vSplitCommitBlindingKeys[l].begin(),
-                                           nCommitValue, secp256k1_generator_h)) {
-                errorMsg ="Pedersen commit failed.";
+                    (uint8_t*)vSplitCommitBlindingKeys[l].begin(),
+                    nCommitValue, secp256k1_generator_h)) {
+                errorMsg = "Pedersen commit failed.";
                 return false;
             }
 
             memcpy(&vDL[(1 + (nSigInputs + 1) * nSigRingSize) * 32], splitInputCommit.data, 33);
             vpBlinds.emplace_back(vSplitCommitBlindingKeys[l].begin());
 
-            const uint8_t *pSplitCommit = splitInputCommit.data;
+            const uint8_t* pSplitCommit = splitInputCommit.data;
             if (0 != (rv = secp256k1_prepare_mlsag(&vm[0], blindSum, 1, 1, nCols, nRows,
-                                                   &vpInCommits[0], &pSplitCommit, &vpBlinds[0]))) {
-                errorMsg ="Failed to prepare mlsag with";
+                          &vpInCommits[0], &pSplitCommit, &vpBlinds[0]))) {
+                errorMsg = "Failed to prepare mlsag with";
                 return false;
             }
 
@@ -1864,27 +1860,19 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
 
         uint256 hashOutputs = txNew.GetOutputsHash();
         if (0 != (rv = secp256k1_generate_mlsag(secp256k1_ctx_blind, &vKeyImages[0], &vDL[0], &vDL[32],
-                                                randSeed, hashOutputs.begin(), nCols, nRows, vSecretColumns[l],
-                                                &vpsk[0], &vm[0]))) {
-            errorMsg ="Failed to generate mlsag with";
+                      randSeed, hashOutputs.begin(), nCols, nRows, vSecretColumns[l],
+                      &vpsk[0], &vm[0]))) {
+            errorMsg = "Failed to generate mlsag with";
             return false;
         }
 
         // Validate the mlsag
         if (0 != (rv = secp256k1_verify_mlsag(secp256k1_ctx_blind, hashOutputs.begin(), nCols,
-                                              nRows, &vm[0], &vKeyImages[0], &vDL[0], &vDL[32]))) {
-            errorMsg ="Failed to generate mlsag on initial generation";
+                      nRows, &vm[0], &vKeyImages[0], &vDL[0], &vDL[32]))) {
+            errorMsg = "Failed to generate mlsag on initial generation";
             return false;
         }
     }
 
     return true;
 }
-
-
-
-
-
-
-
-
