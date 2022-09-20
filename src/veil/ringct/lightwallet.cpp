@@ -994,6 +994,7 @@ bool GetDestinationKeyForOutput(CKey& destinationKey, const CWatchOnlyTx& tx, co
             errorMsg = "StealthSecret failed to generate stealth secret";
             return false;
         }
+        LogPrintf("pkext: %s", HexStr(pkExtracted.begin()));
 
         if (!sShared.IsValid()) {
             LogPrintf("sShared wasn't valid: tx type %s", tx.type == CWatchOnlyTx::ANON ? "anon" : "stealth");
