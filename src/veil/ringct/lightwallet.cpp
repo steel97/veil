@@ -1132,6 +1132,9 @@ bool GetAmountAndBlindForUnspentTx(std::vector<CWatchOnlyTx>& vTxes, const std::
                 errorMsg = "failed to get the amount";
                 return false;
             }
+            LogPrintf("amountx: %llu\n", amountOut);
+            LogPrintf("nonce: %s\n", HexStr(nonce));
+            LogPrintf("rangeProofSize: %d\n", currenttx.ringctout.vRangeproof.size());
         } else if (currenttx.type == CWatchOnlyTx::STEALTH) {
             if (1 != secp256k1_rangeproof_rewind(secp256k1_ctx_blind,
                          blindOut, &amountOut, msg, &mlen, nonce.begin(),
