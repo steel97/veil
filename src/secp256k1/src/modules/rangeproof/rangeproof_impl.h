@@ -506,12 +506,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(size_t* offset, 
     int i;
     int has_nz_range;
     int has_min;
-    printf("==PROOF HEADER==\n");
-    printf("%lld", *offset);
-    printf(" offset\n");
-    printf("==PROOF BYTE==\n");
-    printf("%lld", (int)(proof[*offset]));
-    printf(" byte\n");
 
     if (plen < 65 || ((proof[*offset] & 128) != 0)) {
         return 0;
@@ -531,8 +525,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(size_t* offset, 
             return 0;
         }
         *max_value = UINT64_MAX >> (64 - *mantissa);
-        printf("%lld", *max_value);
-        printf(" mval\n");
     } else {
         *max_value = 0;
     }
@@ -544,8 +536,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(size_t* offset, 
         }
         *max_value *= 10;
         *scale *= 10;
-        printf("%lld", *max_value);
-        printf(" mval\n");
     }
     *min_value = 0;
     if (has_min) {
@@ -555,10 +545,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(size_t* offset, 
         /*FIXME: Compact minvalue encoding?*/
         for (i = 0; i < 8; i++) {
             *min_value = (*min_value << 8) | proof[*offset + i];
-            printf("%lld", *min_value);
-            printf(" min\n");
-            printf("%lld", (int)(proof[*offset + i]));
-            printf(" proof\n");
         }
         *offset += 8;
     }
@@ -610,14 +596,6 @@ SECP256K1_INLINE static int secp256k1_rangeproof_verify_impl(const secp256k1_ecm
     if (!secp256k1_rangeproof_getheader_impl(&offset, &exp, &mantissa, &scale, min_value, max_value, proof, plen)) {
         return 0;
     }
-
-    printf("==MORE HEADER11==\n");
-    printf("%lld\n", *min_value);
-    printf("%lld\n", *max_value);
-    printf("%lld\n", scale);
-    printf("%lld\n", exp);
-    printf("%lld\n", mantissa);
-    printf("%lld\n", offset);
 
     offset_post_header = offset;
     rings = 1;
