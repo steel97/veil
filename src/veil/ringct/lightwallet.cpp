@@ -1133,6 +1133,8 @@ bool GetAmountAndBlindForUnspentTx(std::vector<CWatchOnlyTx>& vTxes, const std::
                 return false;
             }
             LogPrintf("amountx: %llu\n", amountOut);
+            LogPrintf("min: %llu\n", min_value);
+            LogPrintf("max: %llu\n", max_value);
             LogPrintf("nonce: %s\n", HexStr(nonce));
             LogPrintf("rangeProofSize: %d\n", currenttx.ringctout.vRangeproof.size());
         } else if (currenttx.type == CWatchOnlyTx::STEALTH) {
