@@ -531,6 +531,8 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(size_t* offset, 
             return 0;
         }
         *max_value = UINT64_MAX >> (64 - *mantissa);
+        printf(*max_value);
+        printf(" mval\n");
     } else {
         *max_value = 0;
     }
@@ -542,6 +544,8 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(size_t* offset, 
         }
         *max_value *= 10;
         *scale *= 10;
+        printf(*max_value);
+        printf(" mval\n");
     }
     *min_value = 0;
     if (has_min) {
@@ -551,6 +555,10 @@ SECP256K1_INLINE static int secp256k1_rangeproof_getheader_impl(size_t* offset, 
         /*FIXME: Compact minvalue encoding?*/
         for (i = 0; i < 8; i++) {
             *min_value = (*min_value << 8) | proof[*offset + i];
+            printf(*min_value);
+            printf(" min\n");
+            printf((int)(proof[*offset + i]));
+            printf(" proof\n");
         }
         *offset += 8;
     }
