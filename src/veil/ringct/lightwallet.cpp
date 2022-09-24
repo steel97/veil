@@ -1918,7 +1918,7 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
         }
 
         // LogPrintf("keyimages: %s\n", HexStr(vKeyImages));
-        // LogPrintf("vDL: %s\n", HexStr(vDL));
+        LogPrintf("vDL: %s\n", HexStr(vDL));
 
         // Validate the mlsag
         if (0 != (rv = secp256k1_verify_mlsag(secp256k1_ctx_blind, hashOutputs.begin(), nCols,
