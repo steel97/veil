@@ -1851,6 +1851,9 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
                 return false;
             }
 
+            LogPrintf("vm2: %llu\n", vm.size());
+            LogPrintf("vm2: %s\n", HexStr(vm));
+
             // LogPrintf("vm: %s\n", HexStr(vm));
             std::vector<char> asdf111(blindSum, blindSum + 32);
             LogPrintf("bsum: %s\n", HexStr(asdf111));
