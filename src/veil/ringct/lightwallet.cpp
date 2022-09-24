@@ -1826,17 +1826,17 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
 
             for (int uio = 0; uio < vpInCommits.size()) {
                 std::vector<char> test(vpInCommits[i], vpInCommits[i] + 33);
-                LogPrintf("vpin: %llu\n", HexStr());
+                LogPrintf("vpin: %llu\n", HexStr(test));
             }
 
             for (int uio = 0; uio < vpOutCommits.size()) {
                 std::vector<char> test(vpOutCommits[i], vpOutCommits[i] + 33);
-                LogPrintf("vpout: %llu\n", HexStr());
+                LogPrintf("vpout: %llu\n", HexStr(test));
             }
 
             for (int uio = 0; uio < vpBlinds.size()) {
                 std::vector<char> test(vpBlinds[i], vpBlinds[i] + 32);
-                LogPrintf("vpblind: %llu\n", HexStr());
+                LogPrintf("vpblind: %llu\n", HexStr(test));
             }
 
             if (0 != (rv = secp256k1_prepare_mlsag(&vm[0], blindSum,
@@ -1846,8 +1846,9 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
                 return false;
             }
 
-            LogPrintf("vm: %s\n", HexStr(vm));
-            LogPrintf("blind: %s\n", HexStr(blindSum));
+            // LogPrintf("vm: %s\n", HexStr(vm));
+            std::vector<char> asdf111(blindSum, blindSum + 32);
+            LogPrintf("vpin: %llu\n", HexStr(asdf111));
         } else {
             // extra element for C extra, extra row for commitment row, split input commitment
             vDL.resize((1 + (nSigInputs + 1) * nSigRingSize) * 32 + 33);
@@ -1899,7 +1900,7 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
         };
 
         uint256 hashOutputs = txNew.GetOutputsHash();
-        LogPrintf("houts: %s\n", HexStr(hashOutputs));
+        // LogPrintf("houts: %s\n", HexStr(hashOutputs));
         if (0 != (rv = secp256k1_generate_mlsag(secp256k1_ctx_blind, &vKeyImages[0], &vDL[0], &vDL[32],
                       randSeed, hashOutputs.begin(), nCols, nRows, vSecretColumns[l],
                       &vpsk[0], &vm[0]))) {
@@ -1907,8 +1908,8 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
             return false;
         }
 
-        LogPrintf("keyimages: %s\n", HexStr(vKeyImages));
-        LogPrintf("vDL: %s\n", HexStr(vDL));
+        // LogPrintf("keyimages: %s\n", HexStr(vKeyImages));
+        // LogPrintf("vDL: %s\n", HexStr(vDL));
 
         // Validate the mlsag
         if (0 != (rv = secp256k1_verify_mlsag(secp256k1_ctx_blind, hashOutputs.begin(), nCols,
