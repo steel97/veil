@@ -1824,18 +1824,18 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
             LogPrintf("vm: %llu\n", vpOutCommits.size());
             LogPrintf("blindsSize: %llu\n", vpBlinds.size());
 
-            for (int uio = 0; uio < vpInCommits.size()) {
-                std::vector<char> test(vpInCommits[i], vpInCommits[i] + 33);
+            for (int uio = 0; uio < vpInCommits.size(); uio++) {
+                std::vector<char> test(vpInCommits[uio], vpInCommits[uio] + 33);
                 LogPrintf("vpin: %llu\n", HexStr(test));
             }
 
-            for (int uio = 0; uio < vpOutCommits.size()) {
-                std::vector<char> test(vpOutCommits[i], vpOutCommits[i] + 33);
+            for (int uio = 0; uio < vpOutCommits.size(); uio++) {
+                std::vector<char> test(vpOutCommits[uio], vpOutCommits[uio] + 33);
                 LogPrintf("vpout: %llu\n", HexStr(test));
             }
 
-            for (int uio = 0; uio < vpBlinds.size()) {
-                std::vector<char> test(vpBlinds[i], vpBlinds[i] + 32);
+            for (int uio = 0; uio < vpBlinds.size(); uio++) {
+                std::vector<char> test(vpBlinds[uio], vpBlinds[uio] + 32);
                 LogPrintf("vpblind: %llu\n", HexStr(test));
             }
 
