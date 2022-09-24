@@ -1818,7 +1818,7 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
         vpsk[nRows - 1] = blindSum;
 
         std::vector<uint8_t>& vDL = txin.scriptWitness.stack[1];
-
+        LogPrintf("vDL PRE: %s\n", HexStr(vDL)); // vDL base
         if (txNew.vin.size() == 1) {
             vDL.resize((1 + (nSigInputs + 1) * nSigRingSize) * 32); // extra element for C, extra row for commitment row
             vpBlinds.insert(vpBlinds.end(), vpOutBlinds.begin(), vpOutBlinds.end());
