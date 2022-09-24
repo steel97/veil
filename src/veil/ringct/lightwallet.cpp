@@ -1703,9 +1703,11 @@ bool LightWalletInsertKeyImages(CMutableTransaction& txNew, std::vector<std::pai
             }
 
             vSigningKeys.emplace_back(foundTx.ringctIndex, keyDestination);
+            LogPrintf("insert key dest: %s\n", HexStr(keyDestination));
 
             // Keyimage is required for the tx hash
             rv = secp256k1_get_keyimage(secp256k1_ctx_blind, &vKeyImages[k * 33], foundTx.ringctout.pk.begin(), keyDestination.begin());
+            LogPrintf("insert key images: %s\n", HexStr(vKeyImages));
             if (0 != rv) {
                 errorMsg = "Failed to get keyimage";
                 return false;
