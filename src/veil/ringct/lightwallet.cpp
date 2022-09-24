@@ -1817,12 +1817,21 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
             vDL.resize((1 + (nSigInputs + 1) * nSigRingSize) * 32); // extra element for C, extra row for commitment row
             vpBlinds.insert(vpBlinds.end(), vpOutBlinds.begin(), vpOutBlinds.end());
 
+            // print vm
+            // print blindSum
+            // print
+
+            LogPrintf("vm: %llu\n", vpOutCommits.size());
+
             if (0 != (rv = secp256k1_prepare_mlsag(&vm[0], blindSum,
                           vpOutCommits.size(), vpOutCommits.size(), nCols, nRows,
                           &vpInCommits[0], &vpOutCommits[0], &vpBlinds[0]))) {
                 errorMsg = "Failed to prepare mlsag";
                 return false;
             }
+
+            LogPrintf("vm: %s\n", HexStr(vm));
+            LogPrintf("blind: %s\n", HexStr(blindSum));
         } else {
             // extra element for C extra, extra row for commitment row, split input commitment
             vDL.resize((1 + (nSigInputs + 1) * nSigRingSize) * 32 + 33);
@@ -1874,12 +1883,16 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
         };
 
         uint256 hashOutputs = txNew.GetOutputsHash();
+        LogPrintf("houts: %s\n", HexStr(hashOutputs));
         if (0 != (rv = secp256k1_generate_mlsag(secp256k1_ctx_blind, &vKeyImages[0], &vDL[0], &vDL[32],
                       randSeed, hashOutputs.begin(), nCols, nRows, vSecretColumns[l],
                       &vpsk[0], &vm[0]))) {
             errorMsg = "Failed to generate mlsag with";
             return false;
         }
+
+        LogPrintf("keyimages: %s\n", HexStr(vKeyImages));
+        LogPrintf("vDL: %s\n", HexStr(vDL));
 
         // Validate the mlsag
         if (0 != (rv = secp256k1_verify_mlsag(secp256k1_ctx_blind, hashOutputs.begin(), nCols,
