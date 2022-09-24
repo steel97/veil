@@ -22,7 +22,7 @@ jobs:
     - name: Create Distribution Tarball
       run: |
         ./autogen.sh
-        ./configure --with-incompatible-bdb
+        ./configure --with-incompatible-bdb --without-gui --disable-tests
         make dist
     - name: Download Dependencies
       run: make -C depends download
@@ -66,7 +66,7 @@ jobs:
       working-directory: ${{ env.SOURCE_ARTIFACT }}
     - name: Build Veil
       run: |
-        ./configure --disable-jni --prefix=$(realpath depends/x86_64-w64-mingw32)
+        ./configure --disable-jni --prefix=$(realpath depends/x86_64-w64-mingw32) --without-gui --disable-tests
         make -j$(nproc)
       working-directory: ${{ env.SOURCE_ARTIFACT }}
     - name: Prepare Files for Artifact
