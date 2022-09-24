@@ -1769,6 +1769,10 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
 
                     vpsk[k] = vsk[k].begin();
 
+                    LogPrintf("setting vsk: %llu\n", k);
+                    LogPrintf("setting vsk: %s\n", HexStr(vsk[k]));
+
+
                     vpBlinds.push_back(&vInputBlinds[l][k * 32]);
 
                     bool fFound = false;
@@ -1821,22 +1825,23 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
             // print blindSum
             // print
 
-            LogPrintf("vm: %llu\n", vpOutCommits.size());
+            LogPrintf("vm: %llu\n", vm.size());
+            LogPrintf("vm: %s\n", HexStr(vm));
             LogPrintf("blindsSize: %llu\n", vpBlinds.size());
 
             for (int uio = 0; uio < vpInCommits.size(); uio++) {
                 std::vector<char> test(vpInCommits[uio], vpInCommits[uio] + 33);
-                LogPrintf("vpin: %llu\n", HexStr(test));
+                LogPrintf("vpin: %s\n", HexStr(test));
             }
 
             for (int uio = 0; uio < vpOutCommits.size(); uio++) {
                 std::vector<char> test(vpOutCommits[uio], vpOutCommits[uio] + 33);
-                LogPrintf("vpout: %llu\n", HexStr(test));
+                LogPrintf("vpout: %s\n", HexStr(test));
             }
 
             for (int uio = 0; uio < vpBlinds.size(); uio++) {
                 std::vector<char> test(vpBlinds[uio], vpBlinds[uio] + 32);
-                LogPrintf("vpblind: %llu\n", HexStr(test));
+                LogPrintf("vpblind: %s\n", HexStr(test));
             }
 
             if (0 != (rv = secp256k1_prepare_mlsag(&vm[0], blindSum,
@@ -1848,7 +1853,7 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
 
             // LogPrintf("vm: %s\n", HexStr(vm));
             std::vector<char> asdf111(blindSum, blindSum + 32);
-            LogPrintf("vpin: %llu\n", HexStr(asdf111));
+            LogPrintf("bsum: %s\n", HexStr(asdf111));
         } else {
             // extra element for C extra, extra row for commitment row, split input commitment
             vDL.resize((1 + (nSigInputs + 1) * nSigRingSize) * 32 + 33);
