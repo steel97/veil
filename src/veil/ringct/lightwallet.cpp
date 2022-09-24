@@ -1910,7 +1910,7 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
         };
 
         uint256 hashOutputs = txNew.GetOutputsHash();
-        // LogPrintf("houts: %s\n", HexStr(hashOutputs));
+        LogPrintf("houts: %s\n", HexStr(hashOutputs));
         LogPrintf("keyimages: %s\n", HexStr(vKeyImages));
         if (0 != (rv = secp256k1_generate_mlsag(secp256k1_ctx_blind, &vKeyImages[0], &vDL[0], &vDL[32],
                       randSeed, hashOutputs.begin(), nCols, nRows, vSecretColumns[l],
