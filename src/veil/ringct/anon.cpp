@@ -8,18 +8,18 @@
 #include <secp256k1.h>
 #include <secp256k1_mlsag.h>
 
-#include <veil/ringct/blind.h>
-#include <veil/ringct/rctindex.h>
+#include <chainparams.h>
+#include <consensus/validation.h>
 #include <txdb.h>
+#include <txmempool.h>
 #include <util/system.h>
 #include <validation.h>
 #include <validationinterface.h>
-#include <consensus/validation.h>
-#include <chainparams.h>
-#include <txmempool.h>
+#include <veil/ringct/blind.h>
+#include <veil/ringct/rctindex.h>
 
 
-bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
+bool VerifyMLSAG(const CTransaction& tx, CValidationState& state)
 {
     int rv;
     std::set<int64_t> setHaveI; // Anon prev-outputs can only be used once per transaction.
@@ -39,7 +39,7 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
     memset(zeroBlind, 0, 32);
     secp256k1_pedersen_commitment plainCommitment;
     if (nPlainValueOut > 0) {
-        if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainCommitment, zeroBlind, (uint64_t) nPlainValueOut,
+        if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainCommitment, zeroBlind, (uint64_t)nPlainValueOut,
                 secp256k1_generator_h))
             return state.DoS(100, false, REJECT_INVALID, "bad-plain-commitment");
     }
@@ -49,7 +49,7 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
         vpInputSplitCommits.reserve(tx.vin.size());
 
     uint256 hashOutputs = tx.GetOutputsHash();
-    for (const auto &txin : tx.vin) {
+    for (const auto& txin : tx.vin) {
         if (!txin.IsAnonInput())
             return state.DoS(100, false, REJECT_MALFORMED, "bad-anon-input");
 
@@ -73,14 +73,14 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
         if (txin.scriptWitness.stack.size() != 2)
             return state.DoS(100, false, REJECT_MALFORMED, "bad-anonin-wstack-size");
 
-        const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
-        const std::vector<uint8_t> &vMI = txin.scriptWitness.stack[0];
-        const std::vector<uint8_t> &vDL = txin.scriptWitness.stack[1];
+        const std::vector<uint8_t>& vKeyImages = txin.scriptData.stack[0];
+        const std::vector<uint8_t>& vMI = txin.scriptWitness.stack[0];
+        const std::vector<uint8_t>& vDL = txin.scriptWitness.stack[1];
 
         if (vKeyImages.size() != nInputs * 33)
             return state.DoS(100, false, REJECT_MALFORMED, "bad-anonin-keyimages-size");
 
-        if (vDL.size() != (1 + (nInputs+1) * nRingSize) * 32 + (fSplitCommitments ? 33 : 0))
+        if (vDL.size() != (1 + (nInputs + 1) * nRingSize) * 32 + (fSplitCommitments ? 33 : 0))
             return state.DoS(100, false, REJECT_MALFORMED, "bad-anonin-sig-size");
 
         std::vector<uint8_t> vM(nCols * nRows * 33);
@@ -91,13 +91,13 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
         std::vector<const uint8_t*> vpInCommits(nCols * nInputs);
 
         if (fSplitCommitments) {
-            vpOutCommits.push_back(&vDL[(1 + (nInputs+1) * nRingSize) * 32]);
-            vpInputSplitCommits.push_back(&vDL[(1 + (nInputs+1) * nRingSize) * 32]);
+            vpOutCommits.push_back(&vDL[(1 + (nInputs + 1) * nRingSize) * 32]);
+            vpInputSplitCommits.push_back(&vDL[(1 + (nInputs + 1) * nRingSize) * 32]);
         } else {
             vpOutCommits.push_back(plainCommitment.data);
 
-            secp256k1_pedersen_commitment *pc;
-            for (const auto &txout : tx.vpout) {
+            secp256k1_pedersen_commitment* pc;
+            for (const auto& txout : tx.vpout) {
                 if ((pc = txout->GetPCommitment()))
                     vpOutCommits.push_back(pc->data);
             }
@@ -108,7 +108,7 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
             for (size_t i = 0; i < nCols; ++i) {
                 int64_t nIndex = 0;
 
-                if (0 != GetVarInt(vMI, ofs, (uint64_t &) nIndex, nB))
+                if (0 != GetVarInt(vMI, ofs, (uint64_t&)nIndex, nB))
                     return state.DoS(100, false, REJECT_MALFORMED, "bad-anonin-extract-i");
 
                 ofs += nB;
@@ -129,15 +129,15 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
         // checking for duplicate key image to prevent double spends
         uint256 txhashKI;
         for (size_t k = 0; k < nInputs; ++k) {
-            const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
+            const CCmpPubKey& ki = *((CCmpPubKey*)&vKeyImages[k * 33]);
 
             if (!setHaveKI.insert(ki).second) {
                 return state.DoS(100, false, REJECT_INVALID, "bad-anonin-dup-ki-tx-double");
             }
 
-//            if (mempool.HaveKeyImage(ki, txhashKI) && txhashKI != txhash) {
-//                return state.DoS(100, false, REJECT_INVALID, "bad-anonin-dup-ki-mempool");
-//            }
+            //            if (mempool.HaveKeyImage(ki, txhashKI) && txhashKI != txhash) {
+            //                return state.DoS(100, false, REJECT_INVALID, "bad-anonin-dup-ki-mempool");
+            //            }
 
             if (pblocktree->ReadRCTKeyImage(ki, txhashKI) && txhashKI != txhash) {
                 LogPrintf("%s: Key image in tx %s\n", __func__, txhashKI.GetHex());
@@ -146,11 +146,16 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
         }
 
         if (0 != (rv = secp256k1_prepare_mlsag(&vM[0], nullptr, vpOutCommits.size(), vpOutCommits.size(), nCols, nRows,
-                &vpInCommits[0], &vpOutCommits[0], nullptr)))
+                      &vpInCommits[0], &vpOutCommits[0], nullptr)))
             return state.DoS(100, error("%s: prepare-mlsag-failed %d", __func__, rv), REJECT_INVALID, "prepare-mlsag-failed");
 
+        LogPrintf("anon verify tx: %s\n", HexStr(hashOutputs));
+        LogPrintf("anon verify keyimages: %s\n", HexStr(vKeyImages));
+        LogPrintf("anon verify ncols: %uul\n", nCols);
+        LogPrintf("anon verify nrows: %uul\n", nRows);
+
         if (0 != (rv = secp256k1_verify_mlsag(secp256k1_ctx_blind, hashOutputs.begin(), nCols, nRows, &vM[0], &vKeyImages[0],
-                &vDL[0], &vDL[32])))
+                      &vDL[0], &vDL[32])))
             return state.DoS(100, error("%s: verify-mlsag-failed %d", __func__, rv), REJECT_INVALID, "verify-mlsag-failed");
     }
 
@@ -159,25 +164,25 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
         std::vector<const uint8_t*> vpOutCommits;
         vpOutCommits.push_back(plainCommitment.data);
 
-        secp256k1_pedersen_commitment *pc;
-        for (const auto &txout : tx.vpout) {
+        secp256k1_pedersen_commitment* pc;
+        for (const auto& txout : tx.vpout) {
             if ((pc = txout->GetPCommitment()))
                 vpOutCommits.push_back(pc->data);
         }
 
 
         if (1 != (rv = secp256k1_pedersen_verify_tally(secp256k1_ctx_blind,
-                (const secp256k1_pedersen_commitment* const*)vpInputSplitCommits.data(), vpInputSplitCommits.size(),
-                (const secp256k1_pedersen_commitment* const*)vpOutCommits.data(), vpOutCommits.size())))
+                      (const secp256k1_pedersen_commitment* const*)vpInputSplitCommits.data(), vpInputSplitCommits.size(),
+                      (const secp256k1_pedersen_commitment* const*)vpOutCommits.data(), vpOutCommits.size())))
             return state.DoS(100, error("%s: verify-commit-tally-failed %d", __func__, rv), REJECT_INVALID, "verify-commit-tally-failed");
     }
 
     return true;
 }
 
-bool AddKeyImagesToMempool(const CTransaction &tx, CTxMemPool &pool)
+bool AddKeyImagesToMempool(const CTransaction& tx, CTxMemPool& pool)
 {
-    for (const CTxIn &txin : tx.vin) {
+    for (const CTxIn& txin : tx.vin) {
         if (!txin.IsAnonInput())
             continue;
 
@@ -186,13 +191,13 @@ bool AddKeyImagesToMempool(const CTransaction &tx, CTxMemPool &pool)
         uint32_t nInputs, nRingSize;
         txin.GetAnonInfo(nInputs, nRingSize);
 
-        const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
+        const std::vector<uint8_t>& vKeyImages = txin.scriptData.stack[0];
 
         if (vKeyImages.size() != nInputs * 33)
             return false;
 
         for (size_t k = 0; k < nInputs; ++k) {
-            const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
+            const CCmpPubKey& ki = *((CCmpPubKey*)&vKeyImages[k * 33]);
             pool.mapKeyImages[ki] = txhash;
         }
     }
@@ -200,7 +205,7 @@ bool AddKeyImagesToMempool(const CTransaction &tx, CTxMemPool &pool)
     return true;
 }
 
-bool RemoveKeyImagesFromMempool(const uint256 &hash, const CTxIn &txin, CTxMemPool &pool)
+bool RemoveKeyImagesFromMempool(const uint256& hash, const CTxIn& txin, CTxMemPool& pool)
 {
     if (!txin.IsAnonInput())
         return false;
@@ -209,13 +214,13 @@ bool RemoveKeyImagesFromMempool(const uint256 &hash, const CTxIn &txin, CTxMemPo
     uint32_t nInputs, nRingSize;
     txin.GetAnonInfo(nInputs, nRingSize);
 
-    const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
+    const std::vector<uint8_t>& vKeyImages = txin.scriptData.stack[0];
 
     if (vKeyImages.size() != nInputs * 33)
         return false;
 
     for (size_t k = 0; k < nInputs; ++k) {
-        const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
+        const CCmpPubKey& ki = *((CCmpPubKey*)&vKeyImages[k * 33]);
         pool.mapKeyImages.erase(ki);
     }
 
@@ -223,7 +228,7 @@ bool RemoveKeyImagesFromMempool(const uint256 &hash, const CTxIn &txin, CTxMemPo
 }
 
 
-bool AllAnonOutputsUnknown(const CTransaction &tx, CValidationState &state)
+bool AllAnonOutputsUnknown(const CTransaction& tx, CValidationState& state)
 {
     state.fHasAnonOutput = false;
     for (unsigned int k = 0; k < tx.vpout.size(); k++) {
@@ -232,16 +237,15 @@ bool AllAnonOutputsUnknown(const CTransaction &tx, CValidationState &state)
 
         state.fHasAnonOutput = true;
 
-        CTxOutRingCT *txout = (CTxOutRingCT*)tx.vpout[k].get();
+        CTxOutRingCT* txout = (CTxOutRingCT*)tx.vpout[k].get();
 
         int64_t nTestExists;
         if (pblocktree->ReadRCTOutputLink(txout->pk, nTestExists)) {
             COutPoint op(tx.GetHash(), k);
             CAnonOutput ao;
             if (!pblocktree->ReadRCTOutput(nTestExists, ao) || ao.outpoint != op) {
-                return state.DoS(100, error("%s: Duplicate anon-output %s, index %d - existing: %s,%d.", __func__,
-                        HexStr(txout->pk.begin(), txout->pk.end()), nTestExists, ao.outpoint.hash.ToString(), ao.outpoint.n),
-                                REJECT_INVALID, "duplicate-anon-output");
+                return state.DoS(100, error("%s: Duplicate anon-output %s, index %d - existing: %s,%d.", __func__, HexStr(txout->pk.begin(), txout->pk.end()), nTestExists, ao.outpoint.hash.ToString(), ao.outpoint.n),
+                    REJECT_INVALID, "duplicate-anon-output");
             } else {
                 // Already in the blockchain, containing block could have been received before loose tx
                 return false;
@@ -259,7 +263,7 @@ bool AllAnonOutputsUnknown(const CTransaction &tx, CValidationState &state)
 }
 
 
-bool RollBackRCTIndex(int64_t nLastValidRCTOutput, int64_t nExpectErase, std::set<CCmpPubKey> &setKi)
+bool RollBackRCTIndex(int64_t nLastValidRCTOutput, int64_t nExpectErase, std::set<CCmpPubKey>& setKi)
 {
     // This happens when the client is shutdown before flushing indexes
     AssertLockHeld(cs_main);
@@ -286,10 +290,9 @@ bool RollBackRCTIndex(int64_t nLastValidRCTOutput, int64_t nExpectErase, std::se
             pblocktree->EraseRCTOutputLink(ao.pubkey);
             nRemRCTOutput--;
         }
-
     }
 
-    for (const auto &ki : setKi) {
+    for (const auto& ki : setKi) {
         pblocktree->EraseRCTKeyImage(ki);
     }
 
@@ -298,7 +301,7 @@ bool RollBackRCTIndex(int64_t nLastValidRCTOutput, int64_t nExpectErase, std::se
 
 std::vector<std::vector<COutPoint>> GetTxRingCtInputs(const CTransactionRef ptx)
 {
-    std::vector<std::vector<COutPoint> > vTxRingCtInputs;
+    std::vector<std::vector<COutPoint>> vTxRingCtInputs;
     for (const CTxIn& txin : ptx->vin) {
         if (txin.IsAnonInput()) {
             std::vector<COutPoint> vInputs = GetRingCtInputs(txin);
@@ -337,7 +340,7 @@ std::vector<COutPoint> GetRingCtInputs(const CTxIn& txin)
         for (size_t i = 0; i < nCols; ++i) {
             int64_t nIndex = 0;
 
-            if (0 != GetVarInt(vMI, ofs, (uint64_t&) nIndex, nB))
+            if (0 != GetVarInt(vMI, ofs, (uint64_t&)nIndex, nB))
                 continue;
             ofs += nB;
 
@@ -351,7 +354,7 @@ std::vector<COutPoint> GetRingCtInputs(const CTxIn& txin)
     return vInputs;
 }
 
-bool GetRingCtInputs(const CTxIn& txin, std::vector<std::vector<COutPoint> >& vInputs)
+bool GetRingCtInputs(const CTxIn& txin, std::vector<std::vector<COutPoint>>& vInputs)
 {
     vInputs.clear();
     uint32_t nInputs, nRingSize;
@@ -381,7 +384,7 @@ bool GetRingCtInputs(const CTxIn& txin, std::vector<std::vector<COutPoint> >& vI
         for (size_t i = 0; i < nCols; ++i) {
             int64_t nIndex = 0;
 
-            if (0 != GetVarInt(vMI, ofs, (uint64_t&) nIndex, nB))
+            if (0 != GetVarInt(vMI, ofs, (uint64_t&)nIndex, nB))
                 return false;
             ofs += nB;
 
@@ -396,53 +399,53 @@ bool GetRingCtInputs(const CTxIn& txin, std::vector<std::vector<COutPoint> >& vI
     return true;
 }
 
-//bool RewindToCheckpoint(int nCheckPointHeight, int &nBlocks, std::string &sError)
+// bool RewindToCheckpoint(int nCheckPointHeight, int &nBlocks, std::string &sError)
 //{
-//    LogPrintf("%s: At height %d\n", __func__, nCheckPointHeight);
-//    nBlocks = 0;
-//    int64_t nLastRCTOutput = 0;
+//     LogPrintf("%s: At height %d\n", __func__, nCheckPointHeight);
+//     nBlocks = 0;
+//     int64_t nLastRCTOutput = 0;
 //
-//    const CChainParams& chainparams = Params();
-//    CCoinsViewCache view(pcoinsTip.get());
-//    view.fForceDisconnect = true;
-//    CValidationState state;
+//     const CChainParams& chainparams = Params();
+//     CCoinsViewCache view(pcoinsTip.get());
+//     view.fForceDisconnect = true;
+//     CValidationState state;
 //
-//    for (CBlockIndex *pindex = chainActive.Tip(); pindex && pindex->pprev; pindex = pindex->pprev) {
-//        if (pindex->nHeight <= nCheckPointHeight) {
-//            break;
-//        }
+//     for (CBlockIndex *pindex = chainActive.Tip(); pindex && pindex->pprev; pindex = pindex->pprev) {
+//         if (pindex->nHeight <= nCheckPointHeight) {
+//             break;
+//         }
 //
-//        nBlocks++;
+//         nBlocks++;
 //
-//        std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
-//        CBlock& block = *pblock;
-//        if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
-//            return errorN(false, sError, __func__, "ReadBlockFromDisk failed.");
-//        }
-//        if (DISCONNECT_OK != DisconnectBlock(block, pindex, view)) {
-//            return errorN(false, sError, __func__, "DisconnectBlock failed.");
-//        }
-//        if (!FlushView(&view, state, true)) {
-//            return errorN(false, sError, __func__, "FlushView failed.");
-//        }
+//         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
+//         CBlock& block = *pblock;
+//         if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
+//             return errorN(false, sError, __func__, "ReadBlockFromDisk failed.");
+//         }
+//         if (DISCONNECT_OK != DisconnectBlock(block, pindex, view)) {
+//             return errorN(false, sError, __func__, "DisconnectBlock failed.");
+//         }
+//         if (!FlushView(&view, state, true)) {
+//             return errorN(false, sError, __func__, "FlushView failed.");
+//         }
 //
-//        if (!FlushStateToDisk(Params(), state, FlushStateMode::IF_NEEDED)) {
-//            return errorN(false, sError, __func__, "FlushStateToDisk failed.");
-//        }
+//         if (!FlushStateToDisk(Params(), state, FlushStateMode::IF_NEEDED)) {
+//             return errorN(false, sError, __func__, "FlushStateToDisk failed.");
+//         }
 //
-//        chainActive.SetTip(pindex->pprev);
-//        UpdateTip(pindex->pprev, chainparams);
-//        GetMainSignals().BlockDisconnected(pblock);
-//    }
-//    nLastRCTOutput = chainActive.Tip()->nAnonOutputs;
+//         chainActive.SetTip(pindex->pprev);
+//         UpdateTip(pindex->pprev, chainparams);
+//         GetMainSignals().BlockDisconnected(pblock);
+//     }
+//     nLastRCTOutput = chainActive.Tip()->nAnonOutputs;
 //
-//    int nRemoveOutput = nLastRCTOutput+1;
-//    CAnonOutput ao;
-//    while (pblocktree->ReadRCTOutput(nRemoveOutput, ao)) {
-//        pblocktree->EraseRCTOutput(nRemoveOutput);
-//        pblocktree->EraseRCTOutputLink(ao.pubkey);
-//        nRemoveOutput++;
-//    }
+//     int nRemoveOutput = nLastRCTOutput+1;
+//     CAnonOutput ao;
+//     while (pblocktree->ReadRCTOutput(nRemoveOutput, ao)) {
+//         pblocktree->EraseRCTOutput(nRemoveOutput);
+//         pblocktree->EraseRCTOutputLink(ao.pubkey);
+//         nRemoveOutput++;
+//     }
 //
-//    return true;
-//};
+//     return true;
+// };
