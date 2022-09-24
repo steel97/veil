@@ -1824,6 +1824,21 @@ bool LightWalletSignAndVerifyTx(CMutableTransaction& txNew, std::vector<std::vec
             LogPrintf("vm: %llu\n", vpOutCommits.size());
             LogPrintf("blindsSize: %llu\n", vpBlinds.size());
 
+            for (int uio = 0; uio < vpInCommits.size()) {
+                std::vector<char> test(vpInCommits[i], vpInCommits[i] + 33);
+                LogPrintf("vpin: %llu\n", HexStr());
+            }
+
+            for (int uio = 0; uio < vpOutCommits.size()) {
+                std::vector<char> test(vpOutCommits[i], vpOutCommits[i] + 33);
+                LogPrintf("vpout: %llu\n", HexStr());
+            }
+
+            for (int uio = 0; uio < vpBlinds.size()) {
+                std::vector<char> test(vpBlinds[i], vpBlinds[i] + 32);
+                LogPrintf("vpblind: %llu\n", HexStr());
+            }
+
             if (0 != (rv = secp256k1_prepare_mlsag(&vm[0], blindSum,
                           vpOutCommits.size(), vpOutCommits.size(), nCols, nRows,
                           &vpInCommits[0], &vpOutCommits[0], &vpBlinds[0]))) {
