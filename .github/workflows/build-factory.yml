@@ -72,8 +72,8 @@ jobs:
     - name: Prepare Files for Artifact
       run: |
         mkdir -p $ARTIFACT_DIR
-        strip $SOURCE_ARTIFACT/src/{veil-cli.exe,veil-tx.exe,veild.exe,qt/veil-qt.exe}
-        mv $SOURCE_ARTIFACT/src/{veil-cli.exe,veil-tx.exe,veild.exe,qt/veil-qt.exe} $ARTIFACT_DIR
+        strip $SOURCE_ARTIFACT/src/{veil-cli.exe,veil-tx.exe,veild.exe}
+        mv $SOURCE_ARTIFACT/src/{veil-cli.exe,veil-tx.exe,veild.exe} $ARTIFACT_DIR
     - name: Upload Artifact
       uses: actions/upload-artifact@v1
       with:
