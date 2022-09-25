@@ -6,52 +6,48 @@
 
 #include <veil/ringct/stealth.h>
 
+#include <crypto/sha256.h>
 #include <key_io.h>
 #include <pubkey.h>
-#include <crypto/sha256.h>
 #include <random.h>
 #include <script/script.h>
+#include <util/system.h>
 #include <veil/ringct/keyutil.h>
 #include <veil/ringct/stealth.h>
-#include <util/system.h>
 
 #include <support/allocators/secure.h>
 
 #include <cmath>
-#include <secp256k1.h>
 #include <logging.h>
+#include <secp256k1.h>
 
-secp256k1_context *secp256k1_ctx_stealth = nullptr;
+secp256k1_context* secp256k1_ctx_stealth = nullptr;
 
-bool CStealthAddress::SetEncoded(const std::string &encodedAddress)
+bool CStealthAddress::SetEncoded(const std::string& encodedAddress)
 {
     std::vector<uint8_t> raw;
 
-    if (!DecodeBase58(encodedAddress, raw))
-    {
+    if (!DecodeBase58(encodedAddress, raw)) {
         return false;
     };
 
-    if (!VerifyChecksum(raw))
-    {
+    if (!VerifyChecksum(raw)) {
         return false;
     };
 
-    if (raw.size() < MIN_STEALTH_RAW_SIZE + 5)
-    {
+    if (raw.size() < MIN_STEALTH_RAW_SIZE + 5) {
         return false;
     };
 
-    uint8_t *p = &raw[0];
+    uint8_t* p = &raw[0];
     uint8_t version = *p++;
 
-    if (version != Params().Base58Prefix(CChainParams::STEALTH_ADDRESS)[0])
-    {
+    if (version != Params().Base58Prefix(CChainParams::STEALTH_ADDRESS)[0]) {
         LogPrintf("%s: version mismatch 0x%x != 0x%x.\n", __func__, version, Params().Base58Prefix(CChainParams::STEALTH_ADDRESS)[0]);
         return false;
     };
 
-    return 0 == FromRaw(p, raw.size()-1);
+    return 0 == FromRaw(p, raw.size() - 1);
 };
 
 // Veil
@@ -79,7 +75,7 @@ void CStealthAddress::SetNull()
     setStealthDestinations.clear();
 }
 
-int CStealthAddress::FromRaw(const uint8_t *p, size_t nSize)
+int CStealthAddress::FromRaw(const uint8_t* p, size_t nSize)
 {
     if (nSize < MIN_STEALTH_RAW_SIZE)
         return 1;
@@ -90,7 +86,7 @@ int CStealthAddress::FromRaw(const uint8_t *p, size_t nSize)
     p += EC_COMPRESSED_SIZE;
     uint8_t spend_pubkeys = *p++;
 
-    if (nSize < MIN_STEALTH_RAW_SIZE + EC_COMPRESSED_SIZE * (spend_pubkeys-1))
+    if (nSize < MIN_STEALTH_RAW_SIZE + EC_COMPRESSED_SIZE * (spend_pubkeys - 1))
         return 1;
 
     spend_pubkey.resize(EC_COMPRESSED_SIZE * spend_pubkeys);
@@ -101,7 +97,7 @@ int CStealthAddress::FromRaw(const uint8_t *p, size_t nSize)
     prefix.bitfield = 0;
     size_t nPrefixBytes = std::ceil((float)prefix.number_bits / 8.0);
 
-    if (nSize < MIN_STEALTH_RAW_SIZE + EC_COMPRESSED_SIZE * (spend_pubkeys-1) + nPrefixBytes)
+    if (nSize < MIN_STEALTH_RAW_SIZE + EC_COMPRESSED_SIZE * (spend_pubkeys - 1) + nPrefixBytes)
         return 1;
 
     if (nPrefixBytes)
@@ -110,35 +106,36 @@ int CStealthAddress::FromRaw(const uint8_t *p, size_t nSize)
     return 0;
 }
 
-int CStealthAddress::ToRaw(std::vector<uint8_t> &raw) const
+int CStealthAddress::ToRaw(std::vector<uint8_t>& raw) const
 {
     // https://wiki.unsystem.net/index.php/DarkWallet/Stealth#Address_format
     // [version] [options] [scan_key] [N] ... [Nsigs] [prefix_length] ...
 
     size_t nPrefixBytes = std::ceil((float)prefix.number_bits / 8.0);
     size_t nPkSpend = spend_pubkey.size() / EC_COMPRESSED_SIZE;
-    if (scan_pubkey.size() != EC_COMPRESSED_SIZE
-        || spend_pubkey.size() < EC_COMPRESSED_SIZE
-        || spend_pubkey.size() % EC_COMPRESSED_SIZE != 0
-        || nPkSpend > 255
-        || nPrefixBytes > 4)
-    {
+    if (scan_pubkey.size() != EC_COMPRESSED_SIZE || spend_pubkey.size() < EC_COMPRESSED_SIZE || spend_pubkey.size() % EC_COMPRESSED_SIZE != 0 || nPkSpend > 255 || nPrefixBytes > 4) {
         LogPrintf("%s: sanity checks failed.\n", __func__);
         return 1;
     };
 
-    raw.resize(MIN_STEALTH_RAW_SIZE + EC_COMPRESSED_SIZE * (nPkSpend-1) + nPrefixBytes);
+    raw.resize(MIN_STEALTH_RAW_SIZE + EC_COMPRESSED_SIZE * (nPkSpend - 1) + nPrefixBytes);
 
     int o = 0;
-    raw[o] = options; o++;
-    memcpy(&raw[o], &scan_pubkey[0], EC_COMPRESSED_SIZE); o += EC_COMPRESSED_SIZE;
-    raw[o] = nPkSpend; o++;
-    memcpy(&raw[o], &spend_pubkey[0], EC_COMPRESSED_SIZE * nPkSpend); o += EC_COMPRESSED_SIZE * nPkSpend;
-    raw[o] = number_signatures; o++;
-    raw[o] = prefix.number_bits; o++;
-    if (nPrefixBytes)
-    {
-        memcpy(&raw[o], &prefix.bitfield, nPrefixBytes); o += nPrefixBytes;
+    raw[o] = options;
+    o++;
+    memcpy(&raw[o], &scan_pubkey[0], EC_COMPRESSED_SIZE);
+    o += EC_COMPRESSED_SIZE;
+    raw[o] = nPkSpend;
+    o++;
+    memcpy(&raw[o], &spend_pubkey[0], EC_COMPRESSED_SIZE * nPkSpend);
+    o += EC_COMPRESSED_SIZE * nPkSpend;
+    raw[o] = number_signatures;
+    o++;
+    raw[o] = prefix.number_bits;
+    o++;
+    if (nPrefixBytes) {
+        memcpy(&raw[o], &prefix.bitfield, nPrefixBytes);
+        o += nPrefixBytes;
     };
 
     return 0;
@@ -147,7 +144,6 @@ int CStealthAddress::ToRaw(std::vector<uint8_t> &raw) const
 std::string CStealthAddress::Encoded(bool fBech32) const
 {
     return CBitcoinAddress(*this, fBech32).ToString();
-
 };
 
 int CStealthAddress::SetScanPubKey(CPubKey pk)
@@ -157,7 +153,7 @@ int CStealthAddress::SetScanPubKey(CPubKey pk)
     return 0;
 };
 
-int SetPublicKey(const CPubKey &pk, ec_point &out)
+int SetPublicKey(const CPubKey& pk, ec_point& out)
 {
     out.resize(EC_COMPRESSED_SIZE);
     memcpy(&out[0], pk.begin(), EC_COMPRESSED_SIZE);
@@ -169,7 +165,7 @@ CKeyID CStealthAddress::GetSpendKeyID() const
     return CKeyID(Hash160(spend_pubkey.begin(), spend_pubkey.end()));
 };
 
-int SecretToPublicKey(const CKey &secret, ec_point &out)
+int SecretToPublicKey(const CKey& secret, ec_point& out)
 {
     // Public key = private * G
 
@@ -196,7 +192,7 @@ int SecretToPublicKey(const CKey &secret, ec_point &out)
     return 0;
 };
 
-int StealthShared(const CKey &secret, const ec_point &pubkey, CKey &sharedSOut)
+int StealthShared(const CKey& secret, const ec_point& pubkey, CKey& sharedSOut)
 {
     if (pubkey.size() != EC_COMPRESSED_SIZE) {
         LogPrintf("%s: sanity checks failed.\n", __func__);
@@ -223,7 +219,7 @@ int StealthShared(const CKey &secret, const ec_point &pubkey, CKey &sharedSOut)
     return 0;
 };
 
-int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pkSpend, CKey &sharedSOut, ec_point &pkOut)
+int StealthSecret(const CKey& secret, const ec_point& pubkey, const ec_point& pkSpend, CKey& sharedSOut, ec_point& pkOut)
 {
     /*
     send:
@@ -275,11 +271,13 @@ int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pk
     vKey.resize(32);
     CSHA256().Write(tmp33, 33).Finalize(vKey.data());
     memcpy(sharedSOut.begin_nc(), vKey.data(), 32);
-    sharedSOut.SetFlags(/*valide*/true, /*compressed*/true);
+    sharedSOut.SetFlags(/*valide*/ true, /*compressed*/ true);
     vKey.clear();
+    LogPrintf("vkey : %s\n", HexStr(vKey));
+    LogPrintf("vkey2 : %s\n", HexStr(sharedSOut));
 
-    //if (!secp256k1_ec_seckey_verify(secp256k1_ctx_stealth, sharedSOut.begin()))
-    //    return errorN(1, "%s: secp256k1_ec_seckey_verify failed.", __func__); // Start again with a new ephemeral key
+    // if (!secp256k1_ec_seckey_verify(secp256k1_ctx_stealth, sharedSOut.begin()))
+    //     return errorN(1, "%s: secp256k1_ec_seckey_verify failed.", __func__); // Start again with a new ephemeral key
 
     // secp256k1_ec_pubkey_tweak_add verifies secret is in correct range
 
@@ -290,7 +288,7 @@ int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pk
 
     try {
         pkOut.resize(EC_COMPRESSED_SIZE);
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
         return errorN(8, "%s: pkOut.resize %u threw: %s.", __func__, EC_COMPRESSED_SIZE);
     };
 
@@ -300,7 +298,7 @@ int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pk
     return 0;
 };
 
-int StealthSecretSpend(const CKey &scanSecret, const ec_point &ephemPubkey, const CKey &spendSecret, CKey &secretOut)
+int StealthSecretSpend(const CKey& scanSecret, const ec_point& ephemPubkey, const CKey& spendSecret, CKey& secretOut)
 {
     /*
     c  = H(dP)
@@ -337,7 +335,7 @@ int StealthSecretSpend(const CKey &scanSecret, const ec_point &ephemPubkey, cons
 };
 
 
-int StealthSharedToSecretSpend(const CKey &sharedS, const CKey &spendSecret, CKey &secretOut)
+int StealthSharedToSecretSpend(const CKey& sharedS, const CKey& spendSecret, CKey& secretOut)
 {
     secretOut = spendSecret;
     if (!secp256k1_ec_privkey_tweak_add(secp256k1_ctx_stealth, secretOut.begin_nc(), sharedS.begin()))
@@ -349,7 +347,7 @@ int StealthSharedToSecretSpend(const CKey &sharedS, const CKey &spendSecret, CKe
     return 0;
 };
 
-int StealthSharedToPublicKey(const ec_point &pkSpend, const CKey &sharedS, ec_point &pkOut)
+int StealthSharedToPublicKey(const ec_point& pkSpend, const CKey& sharedS, ec_point& pkOut)
 {
     if (pkSpend.size() != EC_COMPRESSED_SIZE)
         return errorN(1, "%s: sanity checks failed.", __func__);
@@ -364,7 +362,7 @@ int StealthSharedToPublicKey(const ec_point &pkSpend, const CKey &sharedS, ec_po
 
     try {
         pkOut.resize(EC_COMPRESSED_SIZE);
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
         return errorN(8, "%s: pkOut.resize %u threw: %s.", __func__, EC_COMPRESSED_SIZE);
     };
 
@@ -374,34 +372,30 @@ int StealthSharedToPublicKey(const ec_point &pkSpend, const CKey &sharedS, ec_po
     return 0;
 };
 
-bool IsStealthAddress(const std::string &encodedAddress)
+bool IsStealthAddress(const std::string& encodedAddress)
 {
     std::vector<uint8_t> raw;
 
-    if (!DecodeBase58(encodedAddress, raw))
-    {
-        //LogPrintf("IsStealthAddress DecodeBase58 failed.\n");
+    if (!DecodeBase58(encodedAddress, raw)) {
+        // LogPrintf("IsStealthAddress DecodeBase58 failed.\n");
         return false;
     };
 
-    if (!VerifyChecksum(raw))
-    {
-        //LogPrintf("IsStealthAddress verify_checksum failed.\n");
+    if (!VerifyChecksum(raw)) {
+        // LogPrintf("IsStealthAddress verify_checksum failed.\n");
         return false;
     };
 
-    if (raw.size() < MIN_STEALTH_RAW_SIZE + 5)
-    {
-        //LogPrintf("IsStealthAddress too few bytes provided.\n");
+    if (raw.size() < MIN_STEALTH_RAW_SIZE + 5) {
+        // LogPrintf("IsStealthAddress too few bytes provided.\n");
         return false;
     };
 
     uint8_t* p = &raw[0];
     uint8_t version = *p++;
 
-    if (version != Params().Base58Prefix(CChainParams::STEALTH_ADDRESS)[0])
-    {
-        //LogPrintf("IsStealthAddress version mismatch 0x%x != 0x%x.\n", version, stealth_version_byte);
+    if (version != Params().Base58Prefix(CChainParams::STEALTH_ADDRESS)[0]) {
+        // LogPrintf("IsStealthAddress version mismatch 0x%x != 0x%x.\n", version, stealth_version_byte);
         return false;
     };
 
@@ -411,33 +405,28 @@ bool IsStealthAddress(const std::string &encodedAddress)
 uint32_t FillStealthPrefix(uint8_t nBits, uint32_t nBitfield)
 {
     uint32_t prefix, mask = SetStealthMask(nBits);
-    GetStrongRandBytes((uint8_t*) &prefix, 4);
+    GetStrongRandBytes((uint8_t*)&prefix, 4);
 
     prefix &= (~mask);
     prefix |= nBitfield & mask;
     return prefix;
 };
 
-bool ExtractStealthPrefix(const char *pPrefix, uint32_t &nPrefix)
+bool ExtractStealthPrefix(const char* pPrefix, uint32_t& nPrefix)
 {
     int base = 10;
     size_t len = strlen(pPrefix);
-    if (len > 2
-        && pPrefix[0] == '0')
-    {
-        if (pPrefix[1] == 'b')
-        {
+    if (len > 2 && pPrefix[0] == '0') {
+        if (pPrefix[1] == 'b') {
             pPrefix += 2;
             base = 2;
-        } else
-        if (pPrefix[1] == 'x' || pPrefix[1] == 'X')
-        {
+        } else if (pPrefix[1] == 'x' || pPrefix[1] == 'X') {
             pPrefix += 2;
             base = 16;
         };
     };
 
-    char *pend;
+    char* pend;
     errno = 0;
     nPrefix = strtol(pPrefix, &pend, base);
 
@@ -446,43 +435,38 @@ bool ExtractStealthPrefix(const char *pPrefix, uint32_t &nPrefix)
     return true;
 };
 
-bool MakeStealthData(const std::string &sNarration, stealth_prefix prefix, const CKey &sShared, const CPubKey &pkEphem,
-                     std::vector<uint8_t> &vData, uint32_t &nStealthPrefix, std::string &sError)
+bool MakeStealthData(const std::string& sNarration, stealth_prefix prefix, const CKey& sShared, const CPubKey& pkEphem, std::vector<uint8_t>& vData, uint32_t& nStealthPrefix, std::string& sError)
 {
     std::vector<uint8_t> vchNarr;
 
-// todo:
-//    if (sNarration.length() > 0)
-//    {
-//        SecMsgCrypter crypter;
-//        crypter.SetKey(sShared.begin(), pkEphem.begin());
-//
-//        if (!crypter.Encrypt((uint8_t*)sNarration.data(), sNarration.length(), vchNarr))
-//            return errorN(false, sError, __func__, "Narration encryption failed.");
-//
-//        if (vchNarr.size() > MAX_STEALTH_NARRATION_SIZE)
-//            return errorN(false, sError, __func__, "Encrypted narration is too long.");
-//    };
+    // todo:
+    //    if (sNarration.length() > 0)
+    //    {
+    //        SecMsgCrypter crypter;
+    //        crypter.SetKey(sShared.begin(), pkEphem.begin());
+    //
+    //        if (!crypter.Encrypt((uint8_t*)sNarration.data(), sNarration.length(), vchNarr))
+    //            return errorN(false, sError, __func__, "Narration encryption failed.");
+    //
+    //        if (vchNarr.size() > MAX_STEALTH_NARRATION_SIZE)
+    //            return errorN(false, sError, __func__, "Encrypted narration is too long.");
+    //    };
 
-    vData.resize(34
-                 + (prefix.number_bits > 0 ? 5 : 0)
-                 + (vchNarr.size() + (vchNarr.size() > 0 ? 1 : 0)));
+    vData.resize(34 + (prefix.number_bits > 0 ? 5 : 0) + (vchNarr.size() + (vchNarr.size() > 0 ? 1 : 0)));
 
     size_t o = 0;
     vData[o++] = DO_STEALTH;
     memcpy(&vData[o], pkEphem.begin(), 33);
     o += 33;
 
-    if (prefix.number_bits > 0)
-    {
+    if (prefix.number_bits > 0) {
         vData[o++] = DO_STEALTH_PREFIX;
         nStealthPrefix = FillStealthPrefix(prefix.number_bits, prefix.bitfield);
         memcpy(&vData[o], &nStealthPrefix, 4);
-        o+=4;
+        o += 4;
     };
 
-    if (vchNarr.size() > 0)
-    {
+    if (vchNarr.size() > 0) {
         vData[o++] = DO_NARR_CRYPT;
         memcpy(&vData[o], &vchNarr[0], vchNarr.size());
         o += vchNarr.size();
@@ -491,8 +475,7 @@ bool MakeStealthData(const std::string &sNarration, stealth_prefix prefix, const
     return true;
 };
 
-int PrepareStealthOutput(const CStealthAddress &sx, const std::string &sNarration,
-                         CScript &scriptPubKey, std::vector<uint8_t> &vData, std::string &sError)
+int PrepareStealthOutput(const CStealthAddress& sx, const std::string& sNarration, CScript& scriptPubKey, std::vector<uint8_t>& vData, std::string& sError)
 {
     CKey sShared, sEphem;
     ec_point pkSendTo;
@@ -518,7 +501,7 @@ void ECC_Start_Stealth()
 {
     assert(secp256k1_ctx_stealth == nullptr);
 
-    secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
+    secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
     assert(ctx != nullptr);
 
     secp256k1_ctx_stealth = ctx;
@@ -526,11 +509,10 @@ void ECC_Start_Stealth()
 
 void ECC_Stop_Stealth()
 {
-    secp256k1_context *ctx = secp256k1_ctx_stealth;
+    secp256k1_context* ctx = secp256k1_ctx_stealth;
     secp256k1_ctx_stealth = nullptr;
 
     if (ctx) {
         secp256k1_context_destroy(ctx);
     }
 }
-
