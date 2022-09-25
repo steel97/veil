@@ -6,12 +6,13 @@
 #include <primitives/transaction.h>
 
 #include <hash.h>
+#include <logging.h>
 #include <tinyformat.h>
 #include <util/strencodings.h>
 
 std::string COutPoint::ToString() const
 {
-    return strprintf("COutPoint(%s, %u)", hash.ToString().substr(0,10), n);
+    return strprintf("COutPoint(%s, %u)", hash.ToString().substr(0, 10), n);
 }
 
 CTxIn::CTxIn(COutPoint prevoutIn, CScript scriptSigIn, uint32_t nSequenceIn)
@@ -47,14 +48,14 @@ void CTxOutBase::SetValue(int64_t value)
 {
     // convenience function intended for use with CTxOutStandard only
     if (nVersion != OUTPUT_STANDARD) return;
-    ((CTxOutStandard*) this)->nValue = value;
+    ((CTxOutStandard*)this)->nValue = value;
 }
 
 void CTxOutBase::AddToValue(const CAmount& nValue)
 {
     if (nVersion != OUTPUT_STANDARD)
         return;
-    ((CTxOutStandard*) this)->nValue += nValue;
+    ((CTxOutStandard*)this)->nValue += nValue;
 }
 
 CAmount CTxOutBase::GetValue() const
@@ -73,7 +74,7 @@ CAmount CTxOutBase::GetValue() const
     };
     */
     if (nVersion != OUTPUT_STANDARD) return 0;
-    return ((CTxOutStandard*) this)->nValue;
+    return ((CTxOutStandard*)this)->nValue;
 };
 
 bool CTxOutBase::GetTxOut(CTxOut& out) const
@@ -87,30 +88,25 @@ bool CTxOutBase::GetTxOut(CTxOut& out) const
 
 std::string CTxOutBase::ToString() const
 {
-    switch (nVersion)
-    {
-        case OUTPUT_STANDARD:
-        {
-            CTxOutStandard *so = (CTxOutStandard*)this;
-            return strprintf("CTxOutStandard(nValue=%d.%08d, scriptPubKey=%s)", so->nValue / COIN, so->nValue % COIN, HexStr(so->scriptPubKey).substr(0, 30));
-        }
-        case OUTPUT_DATA:
-        {
-            CTxOutData *dout = (CTxOutData*)this;
-            return strprintf("CTxOutData(data=%s)", HexStr(dout->vData).substr(0, 30));
-        }
-        case OUTPUT_CT:
-        {
-            CTxOutCT *cto = (CTxOutCT*)this;
-            return strprintf("CTxOutCT(data=%s, scriptPubKey=%s)", HexStr(cto->vData).substr(0, 30), HexStr(cto->scriptPubKey).substr(0, 30));
-        }
-        case OUTPUT_RINGCT:
-        {
-            CTxOutRingCT *rcto = (CTxOutRingCT*)this;
-            return strprintf("CTxOutRingCT(data=%s, pk=%s)", HexStr(rcto->vData).substr(0, 30), HexStr(rcto->pk).substr(0, 30));
-        }
-        default:
-            break;
+    switch (nVersion) {
+    case OUTPUT_STANDARD: {
+        CTxOutStandard* so = (CTxOutStandard*)this;
+        return strprintf("CTxOutStandard(nValue=%d.%08d, scriptPubKey=%s)", so->nValue / COIN, so->nValue % COIN, HexStr(so->scriptPubKey).substr(0, 30));
+    }
+    case OUTPUT_DATA: {
+        CTxOutData* dout = (CTxOutData*)this;
+        return strprintf("CTxOutData(data=%s)", HexStr(dout->vData).substr(0, 30));
+    }
+    case OUTPUT_CT: {
+        CTxOutCT* cto = (CTxOutCT*)this;
+        return strprintf("CTxOutCT(data=%s, scriptPubKey=%s)", HexStr(cto->vData).substr(0, 30), HexStr(cto->scriptPubKey).substr(0, 30));
+    }
+    case OUTPUT_RINGCT: {
+        CTxOutRingCT* rcto = (CTxOutRingCT*)this;
+        return strprintf("CTxOutRingCT(data=%s, pk=%s)", HexStr(rcto->vData).substr(0, 30), HexStr(rcto->pk).substr(0, 30));
+    }
+    default:
+        break;
     };
     return strprintf("CTxOutBase unknown version %d", nVersion);
 }
@@ -133,32 +129,32 @@ bool CTxOutCT::SetScriptPubKey(const CScript& scriptPubKey)
     return true;
 }
 
-void DeepCopy(CTxOutBaseRef &to, const CTxOutBaseRef &from)
+void DeepCopy(CTxOutBaseRef& to, const CTxOutBaseRef& from)
 {
     switch (from->GetType()) {
-        case OUTPUT_STANDARD:
-            to = MAKE_OUTPUT<CTxOutStandard>();
-            *((CTxOutStandard*)to.get()) = *((CTxOutStandard*)from.get());
-            break;
-        case OUTPUT_CT:
-            to = MAKE_OUTPUT<CTxOutCT>();
-            *((CTxOutCT*)to.get()) = *((CTxOutCT*)from.get());
-            break;
-        case OUTPUT_RINGCT:
-            to = MAKE_OUTPUT<CTxOutRingCT>();
-            *((CTxOutRingCT*)to.get()) = *((CTxOutRingCT*)from.get());
-            break;
-        case OUTPUT_DATA:
-            to = MAKE_OUTPUT<CTxOutData>();
-            *((CTxOutData*)to.get()) = *((CTxOutData*)from.get());
-            break;
-        default:
-            break;
+    case OUTPUT_STANDARD:
+        to = MAKE_OUTPUT<CTxOutStandard>();
+        *((CTxOutStandard*)to.get()) = *((CTxOutStandard*)from.get());
+        break;
+    case OUTPUT_CT:
+        to = MAKE_OUTPUT<CTxOutCT>();
+        *((CTxOutCT*)to.get()) = *((CTxOutCT*)from.get());
+        break;
+    case OUTPUT_RINGCT:
+        to = MAKE_OUTPUT<CTxOutRingCT>();
+        *((CTxOutRingCT*)to.get()) = *((CTxOutRingCT*)from.get());
+        break;
+    case OUTPUT_DATA:
+        to = MAKE_OUTPUT<CTxOutData>();
+        *((CTxOutData*)to.get()) = *((CTxOutData*)from.get());
+        break;
+    default:
+        break;
     }
     return;
 }
 
-std::vector<CTxOutBaseRef> DeepCopy(const std::vector<CTxOutBaseRef> &from)
+std::vector<CTxOutBaseRef> DeepCopy(const std::vector<CTxOutBaseRef>& from)
 {
     std::vector<CTxOutBaseRef> vpout;
     vpout.resize(from.size());
@@ -174,7 +170,7 @@ CAmount CTxIn::GetZerocoinSpent() const
 {
     if (!IsZerocoinSpend())
         return 0;
-    return (nSequence&CTxIn::SEQUENCE_LOCKTIME_MASK) * COIN;
+    return (nSequence & CTxIn::SEQUENCE_LOCKTIME_MASK) * COIN;
 }
 
 bool CTxIn::IsZerocoinSpend() const
@@ -227,15 +223,17 @@ uint256 CTransaction::GetOutputsHash() const
     uint256 hashOutputs;
     for (const auto& out : vpout) {
         auto hash = SerializeHash(*out, SER_GETHASH);
+        LogPrintf("HASH123: %s\n", HexStr(hash));
         hashOutputs = Hash(BEGIN(hash), END(hash), hashOutputs.begin(), hashOutputs.end());
+        LogPrintf("HASH321: %s\n", HexStr(hashOutputs));
     }
     return hashOutputs;
 }
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
 CTransaction::CTransaction() : vin(), vpout(), nVersion(CTransaction::CURRENT_VERSION), nLockTime(0), hash{}, m_witness_hash{} {}
-CTransaction::CTransaction(const CMutableTransaction &tx) : vin(tx.vin), vpout{DeepCopy(tx.vpout)}, nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
-CTransaction::CTransaction(CMutableTransaction &&tx) : vin(std::move(tx.vin)), vpout(std::move(tx.vpout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vpout{DeepCopy(tx.vpout)}, nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(CMutableTransaction&& tx) : vin(std::move(tx.vin)), vpout(std::move(tx.vpout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
 
 CAmount CTransaction::GetValueOut() const
 {
@@ -249,12 +247,12 @@ CAmount CTransaction::GetValueOut() const
     return nValueOut;
 }
 
-CAmount CTransaction::GetPlainValueOut(size_t &nStandard, size_t &nCT, size_t &nRingCT) const
+CAmount CTransaction::GetPlainValueOut(size_t& nStandard, size_t& nCT, size_t& nRingCT) const
 {
     // accumulators not cleared here intentionally
     CAmount nValueOut = 0;
 
-    for (const auto &txout : vpout) {
+    for (const auto& txout : vpout) {
         if (txout->IsType(OUTPUT_CT)) {
             nCT++;
         } else if (txout->IsType(OUTPUT_RINGCT)) {
@@ -283,7 +281,7 @@ std::string CTransaction::ToString() const
 {
     std::string str;
     str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%u, nLockTime=%u)\n",
-        GetHash().ToString().substr(0,10),
+        GetHash().ToString().substr(0, 10),
         nVersion,
         vin.size(),
         nLockTime);
@@ -330,7 +328,7 @@ bool CTransaction::HasBlindedValues() const
 
 bool CTransaction::IsZerocoinMint() const
 {
-    for(const auto& pout : vpout) {
+    for (const auto& pout : vpout) {
         CScript script;
         if (pout->GetScriptPubKey(script)) {
             if (script.IsZerocoinMint())
@@ -351,12 +349,12 @@ bool CTransaction::IsZerocoinSpend() const
 
 CAmount CTransaction::GetZerocoinSpent() const
 {
-    if(!IsZerocoinSpend())
+    if (!IsZerocoinSpend())
         return 0;
 
     CAmount nValueOut = 0;
     for (const CTxIn& txin : vin) {
-        if(!txin.IsZerocoinSpend())
+        if (!txin.IsZerocoinSpend())
             continue;
 
         nValueOut += txin.GetZerocoinSpent();
@@ -376,7 +374,7 @@ CAmount CTransaction::GetZerocoinMinted() const
         return pOut->GetValue();
     }
 
-    return  CAmount(0);
+    return CAmount(0);
 }
 
 int CTransaction::GetZerocoinMintCount() const
@@ -391,7 +389,8 @@ int CTransaction::GetZerocoinMintCount() const
     return nCount;
 }
 
-CTransaction& CTransaction::operator=(const CTransaction &tx) {
+CTransaction& CTransaction::operator=(const CTransaction& tx)
+{
     *const_cast<int*>(&nVersion) = tx.nVersion;
     *const_cast<std::vector<CTxIn>*>(&vin) = tx.vin;
     *const_cast<std::vector<CTxOutBaseRef>*>(&vpout) = tx.vpout;

@@ -48,6 +48,7 @@ bool VerifyMLSAG(const CTransaction& tx, CValidationState& state)
     if (fSplitCommitments)
         vpInputSplitCommits.reserve(tx.vin.size());
 
+    LogPrintf("GETTING HASH OUTPUTS\n");
     uint256 hashOutputs = tx.GetOutputsHash();
     for (const auto& txin : tx.vin) {
         if (!txin.IsAnonInput())
