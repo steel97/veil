@@ -273,8 +273,8 @@ int StealthSecret(const CKey& secret, const ec_point& pubkey, const ec_point& pk
     memcpy(sharedSOut.begin_nc(), vKey.data(), 32);
     sharedSOut.SetFlags(/*valide*/ true, /*compressed*/ true);
     vKey.clear();
-    LogPrintf("vkey : %s\n", HexStr(vKey));
-    LogPrintf("vkey2 : %s\n", HexStr(sharedSOut));
+    // LogPrintf("vkey : %s\n", HexStr(vKey));
+    // LogPrintf("vkey2 : %s\n", HexStr(sharedSOut));
 
     // if (!secp256k1_ec_seckey_verify(secp256k1_ctx_stealth, sharedSOut.begin()))
     //     return errorN(1, "%s: secp256k1_ec_seckey_verify failed.", __func__); // Start again with a new ephemeral key

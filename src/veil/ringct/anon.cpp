@@ -56,6 +56,7 @@ bool VerifyMLSAG(const CTransaction& tx, CValidationState& state)
 
         uint32_t nInputs, nRingSize;
         txin.GetAnonInfo(nInputs, nRingSize);
+        LogPrintf("ANON Inputs %d %d\n", nInputs, nRingSize);
 
         if (nInputs < 1 || nInputs > MAX_ANON_INPUTS)
             return state.DoS(100, false, REJECT_INVALID, "bad-anon-num-inputs");
@@ -171,6 +172,15 @@ bool VerifyMLSAG(const CTransaction& tx, CValidationState& state)
                 vpOutCommits.push_back(pc->data);
         }
 
+        for (int uio = 0; uio < vpInputSplitCommits.size(); uio++) {
+            std::vector<char> test(vpInputSplitCommits[uio], vpInputSplitCommits[uio] + 33);
+            LogPrintf("anon vpinputs: %s\n", HexStr(test));
+        }
+
+        for (int uio = 0; uio < vpOutCommits.size(); uio++) {
+            std::vector<char> test(vpOutCommits[uio], vpOutCommits[uio] + 33);
+            LogPrintf("anon vpouts: %s\n", HexStr(test));
+        }
 
         if (1 != (rv = secp256k1_pedersen_verify_tally(secp256k1_ctx_blind,
                       (const secp256k1_pedersen_commitment* const*)vpInputSplitCommits.data(), vpInputSplitCommits.size(),
