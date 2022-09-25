@@ -1209,6 +1209,7 @@ bool BuildRecipientData(std::vector<CTempRecipient>& vecSend, std::string& error
                 ec_point pkSendTo;
                 int k, nTries = 24;
                 for (k = 0; k < nTries; ++k) {
+                    LogPrintf("here!\n");
                     if (StealthSecret(sEphem, sx.scan_pubkey, sx.spend_pubkey, sShared, pkSendTo) == 0) {
                         break;
                     }
