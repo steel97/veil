@@ -34,8 +34,6 @@
 #include <version.h>
 
 #include <crypto/ethash/include/ethash/ethash.hpp>
-#include <logging.h>
-#include <util/strencodings.h>
 #include <vector>
 
 class CBlockHeader;
@@ -227,8 +225,6 @@ public:
 
     void write(const char* pch, size_t size)
     {
-        std::vector<char> data(pch, pch + size);
-        LogPrintf("HASHWRITE: %s\n", HexStr(data));
         ctx.Write((const unsigned char*)pch, size);
     }
 

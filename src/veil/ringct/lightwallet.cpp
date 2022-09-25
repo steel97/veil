@@ -1219,6 +1219,8 @@ bool BuildRecipientData(std::vector<CTempRecipient>& vecSend, std::string& error
                     return false;
                 }
 
+                LogPrintf("brecipient : %s\n", HexStr(sEphem));
+                LogPrintf("pksendto : %s\n", HexStr(pkSendTo));
                 r.pkTo = CPubKey(pkSendTo);
                 CKeyID idTo = r.pkTo.GetID();
 
