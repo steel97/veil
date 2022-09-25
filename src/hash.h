@@ -35,6 +35,7 @@
 
 #include <crypto/ethash/include/ethash/ethash.hpp>
 #include <logging.h>
+#include <strencodings.h>
 #include <vector>
 
 class CBlockHeader;
