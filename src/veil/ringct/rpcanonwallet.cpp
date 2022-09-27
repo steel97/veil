@@ -757,7 +757,7 @@ static UniValue sendbasecointostealth(const JSONRPCRequest& request)
     return SendToInner(request, OUTPUT_STANDARD, OUTPUT_CT);
 };
 
-static UniValue sendbasecointoringct(const JSONRPCRequest& request)
+static UniValue sendbasecointoringct(JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
@@ -774,7 +774,7 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     middleRequest.URI = request.URI;
     middleRequest.params = UniValue();
 
-    if (!middleRequest.params.setArray()) {
+    if (!middleRequest.params.isArray()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't assemble request");
     }
     // add self address
@@ -798,25 +798,66 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     // comment
     if (request.params.size() > 2) {
         middleRequest.params.push_back(request.params[2]);
+    } else {
+        middleRequest.params.push_back("");
     }
     // comment_to
     if (request.params.size() > 3) {
         middleRequest.params.push_back(request.params[3]);
+    } else {
+        middleRequest.params.push_back("");
     }
     // subtractfeefromamount
+    bool substractFee = false;
     if (request.params.size() > 4) {
         middleRequest.params.push_back(request.params[4]);
+        substractFee = request.params[4].get_bool();
+    } else {
+        middleRequest.params.push_back(false);
     }
     // narration
     if (request.params.size() > 5) {
         middleRequest.params.push_back(request.params[5]);
+    } else {
+        middleRequest.params.push_back("");
+    }
+
+    // ring size
+    if (request.params.size() > 8) {
+        middleRequest.params.push_back(request.params[6]);
+    } else {
+        size_t nRingSize = Params().DefaultRingSize();
+        middleRequest.params.push_back(nRingSize);
+    }
+    // input per sig
+    if (request.params.size() > 8) {
+        middleRequest.params.push_back(request.params[7]);
+    } else {
+        size_t nInputsPerSig = 32;
+        middleRequest.params.push_back(nInputsPerSig);
     }
     // txes per input
     if (request.params.size() > 8) {
-        middleRequest.params.push_back(request.params[9]);
+        middleRequest.params.push_back(request.params[8]);
+    } else {
+        size_t nMaxInputsPerTx = gArgs.GetBoolArg("-multitx", false) ? 32 : 0;
+        middleRequest.params.push_back(nMaxInputsPerTx);
+    }
+    UniValue& uvCoinControl;
+    uvCoinControl.pushKV("show_fee", true);
+    middleRequest.params.push_back(uvCoinControl);
+
+    auto middleResult = SendToInner(middleRequest, OUTPUT_STANDARD, OUTPUT_CT);
+    if (!middleResult.isObject() || !middleResult.exists("fee")) {
+        throw JSONRPCError(RPC_FAILED_TO_GET_AMOUNTS, "Error: can't get fee for middle transaction");
     }
 
-    SendToInner(middleRequest, OUTPUT_STANDARD, OUTPUT_CT);
+    if (substractFee) {
+        auto fee = AmountFromValue(middleResult["fee"]);
+        nAmount -= fee;
+        request.params[1] = ValueFromAmount(nAmount);
+    }
+
     return SendToInner(request, OUTPUT_CT, OUTPUT_RINGCT);
 };
 
