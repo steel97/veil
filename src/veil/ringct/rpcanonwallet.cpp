@@ -757,6 +757,40 @@ static UniValue sendbasecointostealth(const JSONRPCRequest& request)
     return SendToInner(request, OUTPUT_STANDARD, OUTPUT_CT);
 };
 
+static UniValue sendstealthtobasecoin(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
+        return NullUniValue;
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
+        throw std::runtime_error(SendHelp(wallet, OUTPUT_CT, OUTPUT_STANDARD));
+
+    return SendToInner(request, OUTPUT_CT, OUTPUT_STANDARD);
+};
+
+static UniValue sendstealthtostealth(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
+        return NullUniValue;
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
+        throw std::runtime_error(SendHelp(wallet, OUTPUT_CT, OUTPUT_CT));
+
+    return SendToInner(request, OUTPUT_CT, OUTPUT_CT);
+};
+
+static UniValue sendstealthtoringct(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
+        return NullUniValue;
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
+        throw std::runtime_error(SendHelp(wallet, OUTPUT_CT, OUTPUT_RINGCT));
+
+    return SendToInner(request, OUTPUT_CT, OUTPUT_RINGCT);
+};
+
+
 static UniValue sendbasecointoringct(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -829,40 +863,6 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
 
     return sendstealthtoringct(request);
 };
-
-static UniValue sendstealthtobasecoin(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
-        return NullUniValue;
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
-        throw std::runtime_error(SendHelp(wallet, OUTPUT_CT, OUTPUT_STANDARD));
-
-    return SendToInner(request, OUTPUT_CT, OUTPUT_STANDARD);
-};
-
-static UniValue sendstealthtostealth(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
-        return NullUniValue;
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
-        throw std::runtime_error(SendHelp(wallet, OUTPUT_CT, OUTPUT_CT));
-
-    return SendToInner(request, OUTPUT_CT, OUTPUT_CT);
-};
-
-static UniValue sendstealthtoringct(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
-        return NullUniValue;
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
-        throw std::runtime_error(SendHelp(wallet, OUTPUT_CT, OUTPUT_RINGCT));
-
-    return SendToInner(request, OUTPUT_CT, OUTPUT_RINGCT);
-};
-
 
 static UniValue sendringcttobasecoin(const JSONRPCRequest& request)
 {
