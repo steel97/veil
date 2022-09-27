@@ -777,21 +777,29 @@ static UniValue sendbasecointoringct(JSONRPCRequest& request)
     if (!middleRequest.params.isArray()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't assemble request");
     }
-    // add self address
+    // add self addresses
     CWallet* const pwallet = wallet.get();
-    std::string myAddress = "";
+    std::string myAddressStealth = "";
+    std::string myAddressBasecoin = "";
+    // changeaddress
     for (const auto& item : pwallet->mapAddressBook) {
-        // Only get basecoin and stealth addresses
-        if (!((item.first.type() == typeid(CStealthAddress)))) continue;
         // Only get mine
         if (!pwallet->IsMine(item.first)) continue;
 
-        UniValue entry(UniValue::VOBJ);
-        myAddress = EncodeDestination(item.first, true);
-        break;
+        // Only get basecoin and stealth addresses
+        if (((item.first.type() == typeid(CStealthAddress))))
+            myAddressStealth = EncodeDestination(item.first, true);
+
+        if ((item.first.type() == typeid(WitnessV0KeyHash)) ||
+            (item.first.type() == typeid(CKeyID))) {
+            myAddressBasecoin = EncodeDestination(item.first, true);
+        }
+
+        if (myAddressStealth != "" && myAddressBasecoin != "")
+            break;
     }
 
-    middleRequest.params.push_back(myAddress);
+    middleRequest.params.push_back(myAddressStealth);
     CAmount nAmount = AmountFromValue(request.params[1]);
     middleRequest.params.push_back(ValueFromAmount(nAmount));
 
@@ -823,14 +831,14 @@ static UniValue sendbasecointoringct(JSONRPCRequest& request)
     }
 
     // ring size
-    if (request.params.size() > 8) {
+    if (request.params.size() > 6) {
         middleRequest.params.push_back(request.params[6]);
     } else {
         size_t nRingSize = Params().DefaultRingSize();
         middleRequest.params.push_back(nRingSize);
     }
     // input per sig
-    if (request.params.size() > 8) {
+    if (request.params.size() > 7) {
         middleRequest.params.push_back(request.params[7]);
     } else {
         size_t nInputsPerSig = 32;
@@ -843,8 +851,10 @@ static UniValue sendbasecointoringct(JSONRPCRequest& request)
         size_t nMaxInputsPerTx = gArgs.GetBoolArg("-multitx", false) ? 32 : 0;
         middleRequest.params.push_back(nMaxInputsPerTx);
     }
+
     UniValue& uvCoinControl;
     uvCoinControl.pushKV("show_fee", true);
+    uvCoinControl.pushKV("changeaddress", myAddressBasecoin);
     middleRequest.params.push_back(uvCoinControl);
 
     auto middleResult = SendToInner(middleRequest, OUTPUT_STANDARD, OUTPUT_CT);
