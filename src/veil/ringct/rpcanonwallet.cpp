@@ -778,7 +778,7 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't assemble request");
     }
     // add self address
-    auto pAnonWallet = wallet->GetAnonWallet();
+    CWallet* const pwallet = wallet.get();
     std::string myAddress = "";
     for (const auto& item : pAnonWallet->mapAddressBook) {
         // Only get basecoin and stealth addresses
