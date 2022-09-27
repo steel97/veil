@@ -780,7 +780,7 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     // add self address
     CWallet* const pwallet = wallet.get();
     std::string myAddress = "";
-    for (const auto& item : pAnonWallet->mapAddressBook) {
+    for (const auto& item : pwallet->mapAddressBook) {
         // Only get basecoin and stealth addresses
         if (!((item.first.type() == typeid(CStealthAddress)))) continue;
         // Only get mine
