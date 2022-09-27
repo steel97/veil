@@ -762,19 +762,19 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
         return NullUniValue;
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 7)
-        throw std::runtime_error(SendHelp(wallet, OUTPUT_STANDARD, OUTPUT_CT));
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 9)
+        throw std::runtime_error(SendHelp(wallet, OUTPUT_STANDARD, OUTPUT_RINGCT));
 
-    JSONRPCRequest midlleRequest;
-    midlleRequest.fHelp = request.fHelp;
-    midlleRequest.id = request.id;
-    midlleRequest.authUser = request.authUser;
-    midlleRequest.peerAddr = request.peerAddr;
-    midlleRequest.strMethod = request.strMethod;
-    midlleRequest.URI = request.URI;
-    midlleRequest.params = UniValue();
+    JSONRPCRequest middleRequest;
+    middleRequest.fHelp = request.fHelp;
+    middleRequest.id = request.id;
+    middleRequest.authUser = request.authUser;
+    middleRequest.peerAddr = request.peerAddr;
+    middleRequest.strMethod = request.strMethod;
+    middleRequest.URI = request.URI;
+    middleRequest.params = UniValue();
 
-    if (!midlleRequest.params.setArray()) {
+    if (!middleRequest.params.setArray()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't assemble request");
     }
     // add self address
@@ -791,33 +791,32 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
         break;
     }
 
-    if (request.params.size() < 2) {
-        throw std::runtime_error(SendHelp(wallet, OUTPUT_STANDARD, OUTPUT_CT));
-    }
-
-    midlleRequest.params.push_back(myAddress);
+    middleRequest.params.push_back(myAddress);
     CAmount nAmount = AmountFromValue(request.params[1]);
-    midlleRequest.params.push_back(ValueFromAmount(nAmount));
+    middleRequest.params.push_back(ValueFromAmount(nAmount));
 
     // comment
     if (request.params.size() > 2) {
-        midlleRequest.params.push_back(request.params[2]);
+        middleRequest.params.push_back(request.params[2]);
     }
     // comment_to
     if (request.params.size() > 3) {
-        midlleRequest.params.push_back(request.params[3]);
+        middleRequest.params.push_back(request.params[3]);
     }
     // subtractfeefromamount
     if (request.params.size() > 4) {
-        midlleRequest.params.push_back(request.params[4]);
+        middleRequest.params.push_back(request.params[4]);
     }
     // narration
     if (request.params.size() > 5) {
-        midlleRequest.params.push_back(request.params[5]);
+        middleRequest.params.push_back(request.params[5]);
+    }
+    // txes per input
+    if (request.params.size() > 8) {
+        middleRequest.params.push_back(request.params[9]);
     }
 
-
-    SendToInner(midlleRequest, OUTPUT_STANDARD, OUTPUT_CT);
+    SendToInner(middleRequest, OUTPUT_STANDARD, OUTPUT_CT);
     return SendToInner(request, OUTPUT_CT, OUTPUT_RINGCT);
 };
 
