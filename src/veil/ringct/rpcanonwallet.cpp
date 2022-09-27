@@ -861,7 +861,7 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't send basecoin to stealth");
     }
 
-    return sendstealthtoringct(request);
+    return SendToInner(request, OUTPUT_CT, OUTPUT_RINGCT);
 };
 
 static UniValue sendringcttobasecoin(const JSONRPCRequest& request)
