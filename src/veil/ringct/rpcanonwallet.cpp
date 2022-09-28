@@ -862,7 +862,7 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_FAILED_TO_GET_AMOUNTS, "Error: can't get fee for middle transaction");
     }
 
-    const newRequest = request;
+    auto newRequest = request;
     if (substractFee) {
         auto fee = AmountFromValue(middleResult["fee"]);
         nAmount -= fee;
