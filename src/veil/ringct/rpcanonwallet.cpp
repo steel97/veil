@@ -325,7 +325,7 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid stealth address");
             }*/
 
-            if (!obj.exists("script") && !address.IsValid()) {
+            if (!obj.exists("script") && !address.IsValid() && !address.IsValidStealthAddress()) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
             }
 
