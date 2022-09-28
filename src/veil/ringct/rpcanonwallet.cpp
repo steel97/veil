@@ -910,13 +910,16 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     middleRequest.params.push_back(uvCoinControl);
 
     auto middleResult = SendToInner(middleRequest, OUTPUT_STANDARD, OUTPUT_CT);
-    if (!middleResult.isObject() || !middleResult.exists("fee")) {
+    if (!middleResult.isArray() || middleResult.size() < 1)
+        throw JSONRPCError(RPC_FAILED_TO_GET_AMOUNTS, "Error: can't get fee for middle transaction");
+    auto middleResultObj = middleResult[0];
+    if (!middleResultObj.isObject() || !middleResultObj.exists("fee")) {
         throw JSONRPCError(RPC_FAILED_TO_GET_AMOUNTS, "Error: can't get fee for middle transaction");
     }
 
     auto newRequest = request;
     if (substractFee) {
-        auto fee = AmountFromValue(middleResult["fee"]);
+        auto fee = AmountFromValue(middleResultObj["fee"]);
         if (request.params[0].isArray()) {
             // substract initial fee for all recipients
             const UniValue& outputs = request.params[0].get_array();
