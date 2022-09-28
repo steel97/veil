@@ -800,53 +800,102 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     }
 
     middleRequest.params.push_back(myAddressStealth);
-    CAmount nAmount = AmountFromValue(request.params[1]);
-    middleRequest.params.push_back(ValueFromAmount(nAmount));
+
+    CAmount targetAmount;
+    // single or multiple outputs
+    int pIndex = 0;
+    if (request.params[0].isArray()) {
+        // TO-DO check all verification cases
+        const UniValue& outputs = request.params[0].get_array();
+
+        for (size_t k = 0; k < outputs.size(); ++k) {
+            if (!outputs[k].isObject()) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Not an object");
+            }
+            const UniValue& obj = outputs[k].get_obj();
+
+            std::string sAddress;
+            CAmount nAmount;
+
+            if (obj.exists("address")) {
+                sAddress = obj["address"].get_str();
+            } else {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Must provide an address.");
+            }
+
+            CBitcoinAddress address(sAddress);
+
+            if (typeOut == OUTPUT_RINGCT && !address.IsValidStealthAddress()) {
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid stealth address");
+            }
+
+            if (!obj.exists("script") && !address.IsValid()) {
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+            }
+
+            if (obj.exists("amount")) {
+                nAmount = AmountFromValue(obj["amount"]);
+            } else {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Must provide an amount.");
+            }
+
+            if (nAmount <= 0) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount");
+            }
+
+            targetAmount += nAmount;
+        }
+    } else {
+        // TO-DO check all verification cases
+        targetAmount = AmountFromValue(request.params[1]);
+        pIndex++;
+    }
+    middleRequest.params.push_back(ValueFromAmount(targetAmount));
 
     // comment
-    if (request.params.size() > 2) {
-        middleRequest.params.push_back(request.params[2]);
+    if (request.params.size() > pIndex + 1) {
+        middleRequest.params.push_back(request.params[pIndex + 1]);
     } else {
         middleRequest.params.push_back("");
     }
     // comment_to
-    if (request.params.size() > 3) {
-        middleRequest.params.push_back(request.params[3]);
+    if (request.params.size() > pIndex + 2) {
+        middleRequest.params.push_back(request.params[pIndex + 2]);
     } else {
         middleRequest.params.push_back("");
     }
     // subtractfeefromamount
     bool substractFee = false;
-    if (request.params.size() > 4) {
-        middleRequest.params.push_back(request.params[4]);
+    if (request.params.size() > pIndex + 3) {
+        middleRequest.params.push_back(request.params[pIndex + 3]);
         substractFee = request.params[4].get_bool();
     } else {
         middleRequest.params.push_back(false);
     }
     // narration
-    if (request.params.size() > 5) {
-        middleRequest.params.push_back(request.params[5]);
+    if (request.params.size() > pIndex + 4) {
+        middleRequest.params.push_back(request.params[pIndex + 4]);
     } else {
         middleRequest.params.push_back("");
     }
 
     // ring size
-    if (request.params.size() > 6) {
-        middleRequest.params.push_back(request.params[6]);
+    if (request.params.size() > pIndex + 5) {
+        middleRequest.params.push_back(request.params[pIndex + 5]);
     } else {
         size_t nRingSize = Params().DefaultRingSize();
         middleRequest.params.push_back(nRingSize);
     }
     // input per sig
-    if (request.params.size() > 7) {
-        middleRequest.params.push_back(request.params[7]);
+    if (request.params.size() > pIndex + 6) {
+        middleRequest.params.push_back(request.params[pIndex + 6]);
     } else {
         size_t nInputsPerSig = 32;
         middleRequest.params.push_back(nInputsPerSig);
     }
     // txes per input
-    if (request.params.size() > 8) {
-        middleRequest.params.push_back(request.params[8]);
+    if (request.params.size() > pIndex + 7) {
+        middleRequest.params.push_back(request.params[pIndex + 7]);
     } else {
         size_t nMaxInputsPerTx = gArgs.GetBoolArg("-multitx", false) ? 32 : 0;
         middleRequest.params.push_back(nMaxInputsPerTx);
@@ -868,9 +917,21 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     auto newRequest = request;
     if (substractFee) {
         auto fee = AmountFromValue(middleResult["fee"]);
-        nAmount -= fee;
-        newRequest.params.erase(1, 2);
-        newRequest.params.insert(1, ValueFromAmount(nAmount));
+        if (request.params[0].isArray()) {
+            // substract initial fee for all recipients
+            const UniValue& outputs = request.params[0].get_array();
+
+            auto feePerRecipient = fee / (int64_t)outputs.size();
+            for (size_t k = 0; k < outputs.size(); ++k) {
+                const UniValue& obj = outputs[k].get_obj();
+                auto nAmount = AmountFromValue(obj["amount"]) - feePerRecipient;
+                outputs[k].pushKV("amount", ValueFromAmount(nAmount));
+            }
+        } else {
+            targetAmount -= fee;
+            newRequest.params.erase(1, 2);
+            newRequest.params.insert(1, ValueFromAmount(targetAmount));
+        }
     }
 
     return SendToInner(newRequest, OUTPUT_CT, OUTPUT_RINGCT);
