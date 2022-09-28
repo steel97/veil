@@ -772,7 +772,7 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     middleRequest.peerAddr = request.peerAddr;
     middleRequest.strMethod = request.strMethod;
     middleRequest.URI = request.URI;
-    middleRequest.params = UniValue();
+    middleRequest.params = UniValue(UniValue::VARR);
 
     /*if (!middleRequest.params.isArray()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't assemble request");
