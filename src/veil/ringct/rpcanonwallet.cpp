@@ -757,7 +757,7 @@ static UniValue sendbasecointostealth(const JSONRPCRequest& request)
     return SendToInner(request, OUTPUT_STANDARD, OUTPUT_CT);
 };
 
-static UniValue sendbasecointoringct(JSONRPCRequest& request)
+static UniValue sendbasecointoringct(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
