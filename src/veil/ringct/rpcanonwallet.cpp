@@ -865,7 +865,7 @@ static UniValue sendbasecointoringct(JSONRPCRequest& request)
     if (substractFee) {
         auto fee = AmountFromValue(middleResult["fee"]);
         nAmount -= fee;
-        request.params.erase(vec.begin() + 1);
+        request.params.erase(1, 2);
         request.params.insert(1, ValueFromAmount(nAmount));
     }
 
