@@ -774,9 +774,9 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     middleRequest.URI = request.URI;
     middleRequest.params = UniValue();
 
-    if (!middleRequest.params.isArray()) {
+    /*if (!middleRequest.params.isArray()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't assemble request");
-    }
+    }*/
     // add self addresses
     CWallet* const pwallet = wallet.get();
     std::string myAddressStealth = "";
