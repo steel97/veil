@@ -852,9 +852,12 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
         middleRequest.params.push_back(nMaxInputsPerTx);
     }
 
+    middleRequest.params.push_back(false);
+
     UniValue uvCoinControl(UniValue::VOBJ);
     uvCoinControl.pushKV("show_fee", true);
     uvCoinControl.pushKV("changeaddress", myAddressBasecoin);
+
     middleRequest.params.push_back(uvCoinControl);
 
     auto middleResult = SendToInner(middleRequest, OUTPUT_STANDARD, OUTPUT_CT);
