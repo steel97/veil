@@ -320,9 +320,10 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
 
             CBitcoinAddress address(sAddress);
 
-            if (typeOut == OUTPUT_RINGCT && !address.IsValidStealthAddress()) {
+            // commented because it will prevent from sending to basecoin and ringct at same time
+            /*if (typeOut == OUTPUT_RINGCT && !address.IsValidStealthAddress()) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid stealth address");
-            }
+            }*/
 
             if (!obj.exists("script") && !address.IsValid()) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
@@ -774,6 +775,11 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
     middleRequest.URI = request.URI;
     middleRequest.params = UniValue(UniValue::VARR);
 
+    size_t nRingSize = Params().DefaultRingSize();
+    size_t nInputsPerSig = 32;
+    size_t nMaxInputsPerTx = gArgs.GetBoolArg("-multitx", false) ? 32 : 0;
+
+
     /*if (!middleRequest.params.isArray()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Error: can't assemble request");
     }*/
@@ -803,9 +809,64 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
 
     CAmount targetAmount;
     // single or multiple outputs
-    int pIndex = 0;
+    // check if tx can be sent
+    /*auto requestCopy = request;
+    auto sz = requestCopy.params.size();
+    if (requestCopy.params[0].isStr()) {
+        for (int i = sz; i < 99; i++) {
+            //"comment\" \"comment-to\" subtractfeefromamount \"narration\" ringsize inputs_per_sig inputs_per_tx
+            switch (i) {
+            case 2:
+                requestCopy.params.push_back("");
+                break;
+            case 3:
+                requestCopy.params.push_back("");
+                break;
+            case 4:
+                requestCopy.params.push_back(false);
+                break;
+            case 5:
+                requestCopy.params.push_back("");
+                break;
+            case 6:
+                requestCopy.params.push_back(nRingSize);
+                break;
+            case 7:
+                requestCopy.params.push_back(nInputsPerSig);
+                break;
+            case 8:
+                requestCopy.params.push_back(nMaxInputsPerTx);
+                break;
+            }
+
+            requestCopy.params.push_back("");
+        }
+        requestCopy.params.push_back(true);
+    } else {
+        for (int i = sz; i < 5; i++) {
+            // 3 - ringsize, 4 - inputs_per_sig, 7 - inputs_per_tx
+            //"comment\" \"comment-to\" subtractfeefromamount \"narration\" ringsize inputs_per_sig inputs_per_tx
+            switch (i) {
+            case 1:
+                requestCopy.params.push_back("");
+            case 2:
+                requestCopy.params.push_back("");
+            case 3:
+                requestCopy.params.push_back(nRingSize);
+            case 4:
+                requestCopy.params.push_back(nInputsPerSig);
+                break;
+            }
+            requestCopy.params.push_back(true);
+            requestCopy.params.push_back("");
+            requestCopy.params.push_back(nMaxInputsPerTx);
+        }
+    }*/
+
+    // TO-DO
+    // auto checkRes = SendToInner(requestCopy, OUTPUT_STANDARD, OUTPUT_STANDARD);
+
     if (request.params[0].isArray()) {
-        // TO-DO check all verification cases
         const UniValue& outputs = request.params[0].get_array();
 
         for (size_t k = 0; k < outputs.size(); ++k) {
@@ -816,22 +877,6 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
 
             std::string sAddress;
             CAmount nAmount;
-
-            if (obj.exists("address")) {
-                sAddress = obj["address"].get_str();
-            } else {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, "Must provide an address.");
-            }
-
-            CBitcoinAddress address(sAddress);
-
-            if (typeOut == OUTPUT_RINGCT && !address.IsValidStealthAddress()) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid stealth address");
-            }
-
-            if (!obj.exists("script") && !address.IsValid()) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
-            }
 
             if (obj.exists("amount")) {
                 nAmount = AmountFromValue(obj["amount"]);
@@ -846,62 +891,59 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
             targetAmount += nAmount;
         }
     } else {
-        // TO-DO check all verification cases
         targetAmount = AmountFromValue(request.params[1]);
-        pIndex++;
     }
     middleRequest.params.push_back(ValueFromAmount(targetAmount));
 
     // comment
-    if (request.params.size() > pIndex + 1) {
-        middleRequest.params.push_back(request.params[pIndex + 1]);
+    if (request.params.size() > 2) {
+        middleRequest.params.push_back(request.params[2]);
     } else {
         middleRequest.params.push_back("");
     }
     // comment_to
-    if (request.params.size() > pIndex + 2) {
-        middleRequest.params.push_back(request.params[pIndex + 2]);
+    if (request.params.size() > 3) {
+        middleRequest.params.push_back(request.params[3]);
     } else {
         middleRequest.params.push_back("");
     }
     // subtractfeefromamount
     bool substractFee = false;
-    if (request.params.size() > pIndex + 3) {
-        middleRequest.params.push_back(request.params[pIndex + 3]);
+    if (request.params.size() > 4) {
+        middleRequest.params.push_back(request.params[4]);
         substractFee = request.params[4].get_bool();
     } else {
         middleRequest.params.push_back(false);
     }
     // narration
-    if (request.params.size() > pIndex + 4) {
-        middleRequest.params.push_back(request.params[pIndex + 4]);
+    if (request.params.size() > 5) {
+        middleRequest.params.push_back(request.params[5]);
     } else {
         middleRequest.params.push_back("");
     }
 
     // ring size
-    if (request.params.size() > pIndex + 5) {
-        middleRequest.params.push_back(request.params[pIndex + 5]);
+    if (request.params.size() > 6) {
+        middleRequest.params.push_back(request.params[6]);
     } else {
-        size_t nRingSize = Params().DefaultRingSize();
         middleRequest.params.push_back(nRingSize);
     }
     // input per sig
-    if (request.params.size() > pIndex + 6) {
-        middleRequest.params.push_back(request.params[pIndex + 6]);
+    if (request.params.size() > 7) {
+        middleRequest.params.push_back(request.params[7]);
     } else {
-        size_t nInputsPerSig = 32;
         middleRequest.params.push_back(nInputsPerSig);
     }
     // txes per input
-    if (request.params.size() > pIndex + 7) {
-        middleRequest.params.push_back(request.params[pIndex + 7]);
+    if (request.params.size() > 8) {
+        middleRequest.params.push_back(request.params[8]);
     } else {
-        size_t nMaxInputsPerTx = gArgs.GetBoolArg("-multitx", false) ? 32 : 0;
         middleRequest.params.push_back(nMaxInputsPerTx);
     }
 
-    middleRequest.params.push_back(false);
+    for (int i = 8; i < 99; i++) {
+        middleRequest.params.push_back("");
+    }
 
     UniValue uvCoinControl(UniValue::VOBJ);
     uvCoinControl.pushKV("show_fee", true);
