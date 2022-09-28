@@ -862,14 +862,15 @@ static UniValue sendbasecointoringct(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_FAILED_TO_GET_AMOUNTS, "Error: can't get fee for middle transaction");
     }
 
+    const newRequest = request;
     if (substractFee) {
         auto fee = AmountFromValue(middleResult["fee"]);
         nAmount -= fee;
-        request.params.erase(1, 2);
-        request.params.insert(1, ValueFromAmount(nAmount));
+        newRequest.params.erase(1, 2);
+        newRequest.params.insert(1, ValueFromAmount(nAmount));
     }
 
-    return SendToInner(request, OUTPUT_CT, OUTPUT_RINGCT);
+    return SendToInner(newRequest, OUTPUT_CT, OUTPUT_RINGCT);
 };
 
 static UniValue sendstealthtobasecoin(const JSONRPCRequest& request)
