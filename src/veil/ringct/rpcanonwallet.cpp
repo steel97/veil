@@ -364,8 +364,8 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
                 fSubtractFeeFromAmount = obj["subfee"].get_bool();
                 fSubtractFeeFromTotal |= fSubtractFeeFromAmount;
             }
-			
-			// TO-DO review
+
+            // TO-DO review
             // change address.get() to dest, for some unknown for me reason address.get() will not work
             if (0 != AddOutput(localTypeOut, vecSend, dest, nAmount, fSubtractFeeFromAmount, sError)) {
                 throw JSONRPCError(RPC_MISC_ERROR, strprintf("AddOutput failed: %s.", sError));
@@ -2633,41 +2633,40 @@ static UniValue buildlightwallettx(const JSONRPCRequest &request)
 };
 
 
-
 static const CRPCCommand commands[] =
-        { //  category              name                                actor (function)                argNames
-                //  --------------------- ------------------------            -----------------------         ----------
-                { "wallet",             "getnewaddress",             &getnewaddress,          {"label","num_prefix_bits","prefix_num","bech32","makeV2"} },
-                { "wallet",             "restoreaddresses",          &restoreaddresses,          {"generate_count"} },
-                { "wallet",             "rescanringctwallet",          &rescanringctwallet,          {} },
-                { "wallet",             "getstealthchangeaddress",          &getstealthchangeaddress,          {} },
-                { "wallet",             "sendbasecointostealth", &sendbasecointostealth,               {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
-				{ "wallet",             "sendbasecointomany", &sendbasecointomany,               {"addresses/amounts", "subtractfeefromamount"} },
+    {
+        //  category              name                                actor (function)                argNames
+        //  --------------------- ------------------------            -----------------------         ----------
+        {"wallet", "getnewaddress", &getnewaddress, {"label", "num_prefix_bits", "prefix_num", "bech32", "makeV2"}},
+        {"wallet", "restoreaddresses", &restoreaddresses, {"generate_count"}},
+        {"wallet", "rescanringctwallet", &rescanringctwallet, {}},
+        {"wallet", "getstealthchangeaddress", &getstealthchangeaddress, {}},
+        {"wallet", "sendbasecointostealth", &sendbasecointostealth, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
+        {"wallet", "sendbasecointomany", &sendbasecointomany, {"addresses/amounts", "subtractfeefromamount"}},
 
-                { "wallet",             "sendstealthtobasecoin", &sendstealthtobasecoin,               {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
-                { "wallet",             "sendstealthtostealth", &sendstealthtostealth,              {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
-                { "wallet",             "sendstealthtoringct", &sendstealthtoringct,              {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
+        {"wallet", "sendstealthtobasecoin", &sendstealthtobasecoin, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
+        {"wallet", "sendstealthtostealth", &sendstealthtostealth, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
+        {"wallet", "sendstealthtoringct", &sendstealthtoringct, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
 
-                { "wallet",             "sendringcttobasecoin", &sendringcttobasecoin,                {"address","amount","comment","comment_to","subtractfeefromamount","narration","ringsize","inputs_per_sig"} },
-                { "wallet",             "sendringcttostealth", &sendringcttostealth,               {"address","amount","comment","comment_to","subtractfeefromamount","narration","ringsize","inputs_per_sig"} },
-                { "wallet",             "sendringcttoringct", &sendringcttoringct,                {"address","amount","comment","comment_to","subtractfeefromamount","narration","ringsize","inputs_per_sig"} },
+        {"wallet", "sendringcttobasecoin", &sendringcttobasecoin, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration", "ringsize", "inputs_per_sig"}},
+        {"wallet", "sendringcttostealth", &sendringcttostealth, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration", "ringsize", "inputs_per_sig"}},
+        {"wallet", "sendringcttoringct", &sendringcttoringct, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration", "ringsize", "inputs_per_sig"}},
 
-                { "wallet",             "sendtypeto",                       &sendtypeto,                    {"typein","typeout","outputs","comment","comment_to","ringsize","inputs_per_sig","test_fee","coincontrol"} },
+        {"wallet", "sendtypeto", &sendtypeto, {"typein", "typeout", "outputs", "comment", "comment_to", "ringsize", "inputs_per_sig", "test_fee", "coincontrol"}},
 
-                { "rawtransactions",    "createrawbasecointransaction", &createrawbasecointransaction,      {"inputs","outputs","locktime","replaceable"} },
-                { "rawtransactions",    "fundrawtransactionfrom",           &fundrawtransactionfrom,        {"input_type","hexstring","input_amounts","output_amounts","options"} },
-                { "rawtransactions",    "verifycommitment",                 &verifycommitment,              {"commitment","blind","amount"} },
-                { "rawtransactions",    "verifyrawtransaction",             &verifyrawtransaction,          {"hexstring","prevtxs","returndecoded"} },
+        {"rawtransactions", "createrawbasecointransaction", &createrawbasecointransaction, {"inputs", "outputs", "locktime", "replaceable"}},
+        {"rawtransactions", "fundrawtransactionfrom", &fundrawtransactionfrom, {"input_type", "hexstring", "input_amounts", "output_amounts", "options"}},
+        {"rawtransactions", "verifycommitment", &verifycommitment, {"commitment", "blind", "amount"}},
+        {"rawtransactions", "verifyrawtransaction", &verifyrawtransaction, {"hexstring", "prevtxs", "returndecoded"}},
 
-                { "wallet",             "importlightwalletaddress",          &importlightwalletaddress,          {"scan_secret", "spend_public", "created_height", "label", "num_prefix_bits", "prefix_num", "bech32"} },
-                { "wallet",             "getwatchonlystatus",                &getwatchonlystatus,                {"scan_secret", "spend_public"} },
-                { "wallet",             "getanonoutputs",                &getanonoutputs,                {"inputsize", "ringsize"} },
-                { "wallet",             "getkeyimages",                &getkeyimages,                {"txdata", "spend_secret", "scan_secret", "spend_public"} },
-                { "wallet",             "buildlightwallettx",                &buildlightwallettx,                {"to_address", "amount", "spend_secret", "scan_secret", "spend_public", "txdata", "dummydata"} },
+        {"wallet", "importlightwalletaddress", &importlightwalletaddress, {"scan_secret", "spend_public", "created_height", "label", "num_prefix_bits", "prefix_num", "bech32"}},
+        {"wallet", "getwatchonlystatus", &getwatchonlystatus, {"scan_secret", "spend_public"}},
+        {"wallet", "getanonoutputs", &getanonoutputs, {"inputsize", "ringsize"}},
+        {"wallet", "getkeyimages", &getkeyimages, {"txdata", "spend_secret", "scan_secret", "spend_public"}},
+        {"wallet", "buildlightwallettx", &buildlightwallettx, {"to_address", "amount", "spend_secret", "scan_secret", "spend_public", "txdata", "dummydata"}},
 
 
-        };
-
+};
 
 
 void RegisterHDWalletRPCCommands(CRPCTable &t)
