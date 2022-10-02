@@ -233,7 +233,7 @@ public:
         default:
             break;
         };
-        // default: case SRT_LABEL_ASC:
+        //default: case SRT_LABEL_ASC:
         return a->second.name.compare(b->second.name) < 0;
     }
 };
@@ -261,7 +261,7 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
     auto pwalletAnon = wallet->GetAnonWallet();
 
 
-    // todo: needed?
+    //todo: needed?
     //    // Make sure the results are valid at least up to the most recent block
     //    // the user could have gotten from another RPC command prior to now
     //    if (!request.fSkipBlock) {
@@ -867,7 +867,7 @@ static UniValue sendbasecointomany(const JSONRPCRequest& request)
         // substract initial fee for all recipients
         UniValue outputs = request.params[0].get_array();
         UniValue newOutputs(UniValue::VARR);
-        auto feePerRecipient = substractFee ? ceil(fee / (int64_t)outputs.size()) : 0; // TO-DO, rounding... should it be something like math.ceil?
+        auto feePerRecipient = substractFee ? (fee / (int64_t)outputs.size()) : 0; // TO-DO, rounding... should it be something like math.ceil?
         for (size_t k = 0; k < outputs.size(); ++k) {
             UniValue obj = outputs[k].get_obj();
             auto nAmount = AmountFromValue(obj["amount"]) - feePerRecipient;
@@ -1181,8 +1181,8 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
         CAmount nAmount = AmountFromValue(o["amount"]);
 
         bool fSubtractFeeFromAmount = false;
-        // if (o.exists("subfee"))
-        //     fSubtractFeeFromAmount = obj["subfee"].get_bool();
+        //if (o.exists("subfee"))
+        //    fSubtractFeeFromAmount = obj["subfee"].get_bool();
 
         if (o["pubkey"].isStr()) {
             std::string s = o["pubkey"].get_str();
@@ -1251,7 +1251,7 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
         r.nType = nType;
         r.SetAmount(nAmount);
         r.fSubtractFeeFromAmount = fSubtractFeeFromAmount;
-        // r.address = address;
+        //r.address = address;
 
         // Need to know the fee before calculating the blind sum
         if (r.nType == OUTPUT_CT || r.nType == OUTPUT_RINGCT) {
@@ -1297,11 +1297,11 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
     UniValue amounts(UniValue::VOBJ);
 
     CAmount nFeeRet = 0;
-    // bool fFirst = true;
+    //bool fFirst = true;
     for (size_t i = 0; i < vecSend.size(); ++i) {
         auto& r = vecSend[i];
 
-        // r.ApplySubFee(nFeeRet, nSubtractFeeFromAmount, fFirst);
+        //r.ApplySubFee(nFeeRet, nSubtractFeeFromAmount, fFirst);
 
         OUTPUT_PTR<CTxOutBase> txbout;
         if (0 != CreateOutput(txbout, r, sError)) {
@@ -1366,9 +1366,9 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             "The inputs added will not be signed, use signrawtransaction for that.\n"
             "Note that all existing inputs must have their previous output transaction be in the wallet or have their amount and blinding factor specified in input_amounts.\n"
             /*"Note that all inputs selected must be of standard form and P2SH scripts must be\n"
-            "in the wallet using importaddress or addmultisigaddress (to calculate fees).\n"
-            "You can see whether this is the case by checking the \"solvable\" field in the listunspent output.\n"
-            "Only pay-to-pubkey, multisig, and P2SH versions thereof are currently supported for watch-only\n"*/
+                "in the wallet using importaddress or addmultisigaddress (to calculate fees).\n"
+                "You can see whether this is the case by checking the \"solvable\" field in the listunspent output.\n"
+                "Only pay-to-pubkey, multisig, and P2SH versions thereof are currently supported for watch-only\n"*/
             "\nArguments:\n"
             "1. \"input_type\"          (string, required) The type of inputs to use standard/anon/blind.\n"
             "2. \"hexstring\"           (string, required) The hex string of the raw transaction\n"
@@ -1632,7 +1632,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             }
         }
 
-        // r.scriptPubKey = ; // TODO
+        //r.scriptPubKey = ; // TODO
         auto ret = pAnonWallet->mapTempRecords.insert(std::make_pair(tx.vin[n].prevout.hash, CTransactionRecord()));
         ret.first->second.InsertOutput(r);
 
@@ -1768,7 +1768,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
     }
 
     for (const CTxIn& txin : tx.vin) {
-        coinControl.Select(txin.prevout, 0); // todo select amount
+        coinControl.Select(txin.prevout, 0); //todo select amount
     }
 
     CTransactionRef tx_new;
@@ -1784,7 +1784,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             }
         } else if (sInputType == "anon") {
             sError = "TODO";
-            // if (!pwallet->AddAnonInputs(wtx, rtx, vecSend, false, nFee, &coinControl, sError))
+            //if (!pwallet->AddAnonInputs(wtx, rtx, vecSend, false, nFee, &coinControl, sError))
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddAnonInputs failed: %s.", sError));
         } else if (sInputType == "blind") {
             if (0 != pAnonWallet->AddBlindedInputs(wtx, rtx, vecSend, false, 0, nFee, &coinControl, sError)) {
@@ -2072,7 +2072,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest& request)
 
         ScriptError serror = SCRIPT_ERR_OK;
         if (!VerifyScript(txin.scriptSig, prevPubKey, &txin.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&txConst, i, vchAmount), &serror)) {
-            // TxInErrorToJSON(txin, vErrors, ScriptErrorString(serror));
+            //TxInErrorToJSON(txin, vErrors, ScriptErrorString(serror));
         }
     }
     bool fComplete = vErrors.empty();
@@ -2085,7 +2085,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest& request)
         result.pushKV("txn", txn);
     }
 
-    // result.pushKV("hex", EncodeHexTx(mtx));
+    //result.pushKV("hex", EncodeHexTx(mtx));
     result.pushKV("complete", fComplete);
     if (!vErrors.empty()) {
         result.pushKV("errors", vErrors);
