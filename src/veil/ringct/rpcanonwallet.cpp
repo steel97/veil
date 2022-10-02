@@ -867,7 +867,7 @@ static UniValue sendbasecointomany(const JSONRPCRequest& request)
         // substract initial fee for all recipients
         UniValue outputs = request.params[0].get_array();
         UniValue newOutputs(UniValue::VARR);
-        auto feePerRecipient = substractFee ? (fee / (int64_t)outputs.size()) : 0; // TO-DO, rounding... should it be something like math.ceil?
+        auto feePerRecipient = substractFee ? ceil(fee / (int64_t)outputs.size()) : 0; // TO-DO, rounding... should it be something like math.ceil?
         for (size_t k = 0; k < outputs.size(); ++k) {
             UniValue obj = outputs[k].get_obj();
             auto nAmount = AmountFromValue(obj["amount"]) - feePerRecipient;
