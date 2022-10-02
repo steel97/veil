@@ -8,47 +8,47 @@
 #include <amount.h>
 #include <base58.h>
 #include <chain.h>
-#include <consensus/validation.h>
+#include <chainparams.h>
 #include <consensus/tx_verify.h>
+#include <consensus/validation.h>
 #include <core_io.h>
-#include <init.h>
+#include <crypto/sha256.h>
 #include <httpserver.h>
-#include <validation.h>
+#include <init.h>
 #include <net.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
-#include <rpc/server.h>
 #include <rpc/mining.h>
+#include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/sign.h>
 #include <timedata.h>
-#include <util/system.h>
 #include <txdb.h>
-#include <veil/ringct/blind.h>
-#include <veil/ringct/anon.h>
 #include <util/moneystr.h>
+#include <util/system.h>
+#include <validation.h>
+#include <veil/mnemonic/mnemonic.h>
+#include <veil/ringct/anon.h>
 #include <veil/ringct/anonwallet.h>
 #include <veil/ringct/anonwalletdb.h>
-#include <veil/ringct/receipt.h>
+#include <veil/ringct/blind.h>
 #include <veil/ringct/lightwallet.h>
+#include <veil/ringct/receipt.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>
-#include <chainparams.h>
-#include <veil/mnemonic/mnemonic.h>
-#include <crypto/sha256.h>
 #include <warnings.h>
 #ifdef ENABLE_WALLET
 #include <wallet/wallet.h> // For DEFAULT_DISABLE_WALLET
 #endif
-#include <univalue.h>
-#include <stdint.h>
 #include <core_io.h>
-#include <veil/ringct/watchonly.h>
 #include <secp256k1_mlsag.h>
+#include <stdint.h>
+#include <univalue.h>
+#include <veil/ringct/watchonly.h>
 
 static const std::string WALLET_ENDPOINT_BASE = "/wallet/";
 
-static UniValue getnewaddress(const JSONRPCRequest &request)
+static UniValue getnewaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
@@ -56,24 +56,23 @@ static UniValue getnewaddress(const JSONRPCRequest &request)
 
     if (request.fHelp || request.params.size() > 5)
         throw std::runtime_error(
-                "getnewaddress ( \"label\" num_prefix_bits prefix_num bech32 makeV2 )\n"
-                "Returns a new stealth address for receiving payments."
-                + HelpRequiringPassphrase(wallet.get()) +
-                "\nArguments:\n"
-                "1. \"label\"             (string, optional) If specified the key is added to the address book.\n"
-                "2. num_prefix_bits     (int, optional) If specified and > 0, the stealth address is created with a prefix.\n"
-                "3. prefix_num          (int, optional) If prefix_num is not specified the prefix will be selected deterministically.\n"
-                "           prefix_num can be specified in base2, 10 or 16, for base 2 prefix_num must begin with 0b, 0x for base16.\n"
-                "           A 32bit integer will be created from prefix_num and the least significant num_prefix_bits will become the prefix.\n"
-                "           A stealth address created without a prefix will scan all incoming stealth transactions, irrespective of transaction prefixes.\n"
-                "           Stealth addresses with prefixes will scan only incoming stealth transactions with a matching prefix.\n"
-                "4. bech32              (bool, optional, default=false) Use Bech32 encoding.\n"
-                "5. makeV2              (bool, optional, default=false) Generate an address from the same method used for hardware wallets.\n"
-                "\nResult:\n"
-                "\"address\"              (string) The new stealth address\n"
-                "\nExamples:\n"
-                + HelpExampleCli("getnewaddress", "\"lblTestSxAddrPrefix\" 3 \"0b101\"")
-                + HelpExampleRpc("getnewaddress", "\"lblTestSxAddrPrefix\", 3, \"0b101\""));
+            "getnewaddress ( \"label\" num_prefix_bits prefix_num bech32 makeV2 )\n"
+            "Returns a new stealth address for receiving payments." +
+            HelpRequiringPassphrase(wallet.get()) +
+            "\nArguments:\n"
+            "1. \"label\"             (string, optional) If specified the key is added to the address book.\n"
+            "2. num_prefix_bits     (int, optional) If specified and > 0, the stealth address is created with a prefix.\n"
+            "3. prefix_num          (int, optional) If prefix_num is not specified the prefix will be selected deterministically.\n"
+            "           prefix_num can be specified in base2, 10 or 16, for base 2 prefix_num must begin with 0b, 0x for base16.\n"
+            "           A 32bit integer will be created from prefix_num and the least significant num_prefix_bits will become the prefix.\n"
+            "           A stealth address created without a prefix will scan all incoming stealth transactions, irrespective of transaction prefixes.\n"
+            "           Stealth addresses with prefixes will scan only incoming stealth transactions with a matching prefix.\n"
+            "4. bech32              (bool, optional, default=false) Use Bech32 encoding.\n"
+            "5. makeV2              (bool, optional, default=false) Generate an address from the same method used for hardware wallets.\n"
+            "\nResult:\n"
+            "\"address\"              (string) The new stealth address\n"
+            "\nExamples:\n" +
+            HelpExampleCli("getnewaddress", "\"lblTestSxAddrPrefix\" 3 \"0b101\"") + HelpExampleRpc("getnewaddress", "\"lblTestSxAddrPrefix\", 3, \"0b101\""));
 
     EnsureWalletIsUnlocked(wallet.get());
 
@@ -82,8 +81,7 @@ static UniValue getnewaddress(const JSONRPCRequest &request)
         sLabel = request.params[0].get_str();
 
     uint32_t num_prefix_bits = 0;
-    if (request.params.size() > 1)
-    {
+    if (request.params.size() > 1) {
         std::string s = request.params[1].get_str();
         if (s.length() && !ParseUInt32(s, &num_prefix_bits))
             throw JSONRPCError(RPC_INVALID_PARAMETER, _("num_prefix_bits invalid number."));
@@ -113,7 +111,7 @@ static UniValue getnewaddress(const JSONRPCRequest &request)
     return stealthAddress.ToString(fBech32);
 }
 
-static UniValue getstealthchangeaddress(const JSONRPCRequest &request)
+static UniValue getstealthchangeaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
@@ -121,14 +119,13 @@ static UniValue getstealthchangeaddress(const JSONRPCRequest &request)
 
     if (request.fHelp || request.params.size() != 0)
         throw std::runtime_error(
-                "getstealthchangeaddress\n"
-                "Returns the default stealth change address."
-                + HelpRequiringPassphrase(wallet.get()) +
-                "\nResult:\n"
-                "\"address\"              (string) The stealth change address\n"
-                "\nExamples:\n"
-                + HelpExampleCli("getstealthchangeaddress", "")
-                + HelpExampleRpc("getstealthchangeaddress", ""));
+            "getstealthchangeaddress\n"
+            "Returns the default stealth change address." +
+            HelpRequiringPassphrase(wallet.get()) +
+            "\nResult:\n"
+            "\"address\"              (string) The stealth change address\n"
+            "\nExamples:\n" +
+            HelpExampleCli("getstealthchangeaddress", "") + HelpExampleRpc("getstealthchangeaddress", ""));
 
     EnsureWalletIsUnlocked(wallet.get());
     auto pAnonWallet = wallet->GetAnonWallet();
@@ -137,7 +134,7 @@ static UniValue getstealthchangeaddress(const JSONRPCRequest &request)
     return address.ToString(true);
 }
 
-static UniValue restoreaddresses(const JSONRPCRequest &request)
+static UniValue restoreaddresses(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
@@ -145,16 +142,15 @@ static UniValue restoreaddresses(const JSONRPCRequest &request)
 
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-                "restoreaddresses (generate_count)\n"
-                "Regenerates deterministic stealth addresses to give wallet knowledge that they are owned"
-                + HelpRequiringPassphrase(wallet.get()) +
-                "\nArguments:\n"
-                "1. generate_count       (int, required) Amount of addresses to add to the wallet internally. WARNING: Generate as few as needed. High address counts will slow down sync times.\n"
-                "\nResult:\n"
-                "\"address\"              (string) The new stealth address\n"
-                "\nExamples:\n"
-                + HelpExampleCli("restoreaddresses", "10")
-                + HelpExampleRpc("restoreaddresses", "10"));
+            "restoreaddresses (generate_count)\n"
+            "Regenerates deterministic stealth addresses to give wallet knowledge that they are owned" +
+            HelpRequiringPassphrase(wallet.get()) +
+            "\nArguments:\n"
+            "1. generate_count       (int, required) Amount of addresses to add to the wallet internally. WARNING: Generate as few as needed. High address counts will slow down sync times.\n"
+            "\nResult:\n"
+            "\"address\"              (string) The new stealth address\n"
+            "\nExamples:\n" +
+            HelpExampleCli("restoreaddresses", "10") + HelpExampleRpc("restoreaddresses", "10"));
 
     EnsureWalletIsUnlocked(wallet.get());
     auto pAnonWallet = wallet->GetAnonWallet();
@@ -169,7 +165,7 @@ static UniValue restoreaddresses(const JSONRPCRequest &request)
     return NullUniValue;
 }
 
-static UniValue rescanringctwallet(const JSONRPCRequest &request)
+static UniValue rescanringctwallet(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
@@ -177,13 +173,10 @@ static UniValue rescanringctwallet(const JSONRPCRequest &request)
 
     if (request.fHelp || !request.params.empty())
         throw std::runtime_error(
-                "rescanringctwallet\n"
-                "Rescans all transactions in the RingCT & CT Wallets."
-                + HelpRequiringPassphrase(wallet.get()) +
-                "\nExamples:\n"
-                + HelpExampleCli("rescanringctwallet", "")
-                + HelpExampleRpc("rescanringctwallet", ""));
-
+            "rescanringctwallet\n"
+            "Rescans all transactions in the RingCT & CT Wallets." +
+            HelpRequiringPassphrase(wallet.get()) +
+            "\nExamples:\n" + HelpExampleCli("rescanringctwallet", "") + HelpExampleRpc("rescanringctwallet", ""));
 
 
     EnsureWalletIsUnlocked(wallet.get());
@@ -220,26 +213,25 @@ static std::string getAddress(UniValue const & transaction)
 }
 */
 
-enum SortCodes
-{
+enum SortCodes {
     SRT_LABEL_ASC,
     SRT_LABEL_DESC,
 };
 
-class AddressComp {
+class AddressComp
+{
 public:
     int nSortCode;
     AddressComp(int nSortCode_) : nSortCode(nSortCode_) {}
-    bool operator() (
-            const std::map<CTxDestination, CAddressBookData>::iterator a,
-            const std::map<CTxDestination, CAddressBookData>::iterator b) const
+    bool operator()(
+        const std::map<CTxDestination, CAddressBookData>::iterator a,
+        const std::map<CTxDestination, CAddressBookData>::iterator b) const
     {
-        switch (nSortCode)
-        {
-            case SRT_LABEL_DESC:
-                return b->second.name.compare(a->second.name) < 0;
-            default:
-                break;
+        switch (nSortCode) {
+        case SRT_LABEL_DESC:
+            return b->second.name.compare(a->second.name) < 0;
+        default:
+            break;
         };
         //default: case SRT_LABEL_ASC:
         return a->second.name.compare(b->second.name) < 0;
@@ -248,8 +240,7 @@ public:
 
 extern double GetDifficulty(const CBlockIndex* blockindex = nullptr);
 
-static int AddOutput(uint8_t nType, std::vector<CTempRecipient> &vecSend, const CTxDestination &address, CAmount nValue,
-                     bool fSubtractFeeFromAmount, std::string &sError)
+static int AddOutput(uint8_t nType, std::vector<CTempRecipient>& vecSend, const CTxDestination& address, CAmount nValue, bool fSubtractFeeFromAmount, std::string& sError)
 {
     CTempRecipient r;
     r.nType = nType;
@@ -271,11 +262,11 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
 
 
     //todo: needed?
-//    // Make sure the results are valid at least up to the most recent block
-//    // the user could have gotten from another RPC command prior to now
-//    if (!request.fSkipBlock) {
-//        pwallet->BlockUntilSyncedToCurrentChain();
-//    }
+    //    // Make sure the results are valid at least up to the most recent block
+    //    // the user could have gotten from another RPC command prior to now
+    //    if (!request.fSkipBlock) {
+    //        pwallet->BlockUntilSyncedToCurrentChain();
+    //    }
 
     EnsureWalletIsUnlocked(wallet.get());
 
@@ -306,7 +297,7 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
     bool fSubtractFeeFromTotal = false;
 
     if (request.params[0].isArray()) {
-        const UniValue &outputs = request.params[0].get_array();
+        const UniValue& outputs = request.params[0].get_array();
 
         nMaxInputsOfs = 7;
         if (request.params.size() > nMaxInputsOfs) {
@@ -316,7 +307,7 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
             if (!outputs[k].isObject()) {
                 throw JSONRPCError(RPC_TYPE_ERROR, "Not an object");
             }
-            const UniValue &obj = outputs[k].get_obj();
+            const UniValue& obj = outputs[k].get_obj();
 
             std::string sAddress;
             CAmount nAmount;
@@ -364,15 +355,15 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
                 fSubtractFeeFromAmount = obj["subfee"].get_bool();
                 fSubtractFeeFromTotal |= fSubtractFeeFromAmount;
             }
-			
-			// TO-DO review
+
+            // TO-DO review
             // change address.get() to dest, for some unknown for me reason address.get() will not work
             if (0 != AddOutput(localTypeOut, vecSend, dest, nAmount, fSubtractFeeFromAmount, sError)) {
                 throw JSONRPCError(RPC_MISC_ERROR, strprintf("AddOutput failed: %s.", sError));
             }
 
             if (obj.exists("script")) {
-                CTempRecipient &r = vecSend.back();
+                CTempRecipient& r = vecSend.back();
 
                 if (sAddress != "script") {
                     JSONRPCError(RPC_INVALID_PARAMETER, "Address parameter must be 'script' to set script explicitly.");
@@ -434,23 +425,23 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
     }
 
     switch (typeIn) {
-        case OUTPUT_STANDARD:
-            if (nTotal > wallet->GetBasecoinBalance()) {
-                throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-            }
-            break;
-        case OUTPUT_CT:
-            if (nTotal > pwalletAnon->GetBlindBalance()) {
-                throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient blinded funds");
-            }
-            break;
-        case OUTPUT_RINGCT:
-            if (nTotal > pwalletAnon->GetAnonBalance()) {
-                throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient anon funds");
-            }
-            break;
-        default:
-            throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown input type: %d.", typeIn));
+    case OUTPUT_STANDARD:
+        if (nTotal > wallet->GetBasecoinBalance()) {
+            throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
+        }
+        break;
+    case OUTPUT_CT:
+        if (nTotal > pwalletAnon->GetBlindBalance()) {
+            throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient blinded funds");
+        }
+        break;
+    case OUTPUT_RINGCT:
+        if (nTotal > pwalletAnon->GetAnonBalance()) {
+            throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient anon funds");
+        }
+        break;
+    default:
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown input type: %d.", typeIn));
     }
 
     auto nv = nRingSizeOfs;
@@ -504,15 +495,15 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
             }
         }
 
-        const UniValue &uvInputs = uvCoinControl["inputs"];
+        const UniValue& uvInputs = uvCoinControl["inputs"];
         if (uvInputs.isArray()) {
             for (size_t i = 0; i < uvInputs.size(); ++i) {
-                const UniValue &uvi = uvInputs[i];
+                const UniValue& uvi = uvInputs[i];
                 RPCTypeCheckObj(uvi,
-                                {
-                                        {"tx", UniValueType(UniValue::VSTR)},
-                                        {"n", UniValueType(UniValue::VNUM)},
-                                });
+                    {
+                        {"tx", UniValueType(UniValue::VSTR)},
+                        {"n", UniValueType(UniValue::VNUM)},
+                    });
 
                 COutPoint op(uint256S(uvi["tx"].get_str()), uvi["n"].get_int());
                 coincontrol.setSelected.insert(op);
@@ -580,24 +571,23 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
         CAmount nFeeRet = 0;
         // We might need to make a copy of vecSend here.
         switch (typeIn) {
-            case OUTPUT_STANDARD:
-            {
-                if (0 !=
-                    pwalletAnon->AddStandardInputs(wtx, rtx, vecSend, !fCheckFeeOnly, nFeeRet, &coincontrol, sError, false, 0))
-                    throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddStandardInputs failed: %s.", sError));
-                break;
-            }
-            case OUTPUT_CT:
-                if (0 != pwalletAnon->AddBlindedInputs(wtx, rtx, vecSend, !fCheckFeeOnly, nMaxInputsPerTx, nFeeRet, &coincontrol, sError))
-                    throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddBlindedInputs failed: %s.", sError));
-                break;
-            case OUTPUT_RINGCT:
-                if (!pwalletAnon->AddAnonInputs(wtx, rtx, vecSend, !fCheckFeeOnly, nRingSize,
-                                                nInputsPerSig, nMaxInputsPerTx, nFeeRet, &coincontrol, sError))
-                    throw JSONRPCError(RPC_WALLET_ERROR, sError);
-                break;
-            default:
-                throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown input type: %d.", typeIn));
+        case OUTPUT_STANDARD: {
+            if (0 !=
+                pwalletAnon->AddStandardInputs(wtx, rtx, vecSend, !fCheckFeeOnly, nFeeRet, &coincontrol, sError, false, 0))
+                throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddStandardInputs failed: %s.", sError));
+            break;
+        }
+        case OUTPUT_CT:
+            if (0 != pwalletAnon->AddBlindedInputs(wtx, rtx, vecSend, !fCheckFeeOnly, nMaxInputsPerTx, nFeeRet, &coincontrol, sError))
+                throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddBlindedInputs failed: %s.", sError));
+            break;
+        case OUTPUT_RINGCT:
+            if (!pwalletAnon->AddAnonInputs(wtx, rtx, vecSend, !fCheckFeeOnly, nRingSize,
+                    nInputsPerSig, nMaxInputsPerTx, nFeeRet, &coincontrol, sError))
+                throw JSONRPCError(RPC_WALLET_ERROR, sError);
+            break;
+        default:
+            throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown input type: %d.", typeIn));
         }
 
         // subtract total sent from nTotal
@@ -622,7 +612,7 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
 
             UniValue objChangedOutputs(UniValue::VOBJ);
             std::map<std::string, CAmount> mapChanged; // Blinded outputs are split, join the values for display
-            for (const auto &r : vecSend) {
+            for (const auto& r : vecSend) {
                 if (!r.fChange && r.nAmount != r.nAmountSelected) {
                     std::string sAddr = CBitcoinAddress(r.address).ToString();
                     if (mapChanged.count(sAddr)) {
@@ -633,7 +623,7 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
                 }
             }
 
-            for (const auto &v : mapChanged) {
+            for (const auto& v : mapChanged) {
                 objChangedOutputs.pushKV(v.first, v.second);
             }
 
@@ -657,7 +647,7 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
         // We did a partial test in PreAcceptMempoolTx (anonwallet.cpp), but we need to do the full one
         LOCK(cs_main);
         if (!AcceptToMemoryPool(mempool, state, wtx.tx, nullptr /* pfMissingInputs */, nullptr /* plTxnReplaced */,
-                                false /* bypass_limits */, maxTxFee, true /* test accept */)) {
+                false /* bypass_limits */, maxTxFee, true /* test accept */)) {
             // failed mempool validation for one of the transactions so no partial transaction is being committed
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Transaction failed accept to memory pool"));
         }
@@ -674,9 +664,10 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
         CReserveKey reservekey(wallet.get());
         if (!wallet->CommitTransaction(vwtx[i].tx, vwtx[i].mapValue, vwtx[i].vOrderForm, &reservekey, g_connman.get(), state, nComputeTimeFinish - nComputeTimeStart)) {
             receipt.SetStatus(
-                    "Error: The transaction was rejected! This might happen if some of the coins in your wallet "
-                    "were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy "
-                    "but not marked as spent here.", nStatus);
+                "Error: The transaction was rejected! This might happen if some of the coins in your wallet "
+                "were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy "
+                "but not marked as spent here.",
+                nStatus);
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Transaction commit failed: %s", FormatStateMessage(state)));
         }
     }
@@ -686,24 +677,23 @@ static UniValue SendToInner(const JSONRPCRequest& request, OutputTypes typeIn, O
     return results;
 }
 
-static const char *TypeToWord(OutputTypes type)
+static const char* TypeToWord(OutputTypes type)
 {
-    switch (type)
-    {
-        case OUTPUT_STANDARD:
-            return "basecoin";
-        case OUTPUT_CT:
-            return "stealth";
-        case OUTPUT_RINGCT:
-            return "ringct";
-        default:
-            break;
+    switch (type) {
+    case OUTPUT_STANDARD:
+        return "basecoin";
+    case OUTPUT_CT:
+        return "stealth";
+    case OUTPUT_RINGCT:
+        return "ringct";
+    default:
+        break;
     }
 
     return "unknown";
 }
 
-static OutputTypes WordToType(std::string &s)
+static OutputTypes WordToType(std::string& s)
 {
     if (s == "basecoin")
         return OUTPUT_STANDARD;
@@ -730,31 +720,32 @@ static std::string SendHelp(std::shared_ptr<CWallet> pwallet, OutputTypes typeIn
 
     rv += "\nSend an amount of ";
     rv += typeIn == OUTPUT_RINGCT ? "ringct" : typeIn == OUTPUT_CT ? "stealth" : "";
-    rv += std::string(" veil in a") + (typeOut == OUTPUT_RINGCT || typeOut == OUTPUT_CT ? " stealth" : "") + " payment to a given address"
-          + (typeOut == OUTPUT_CT ? " in ringct veil": "") + ".\n";
+    rv += std::string(" veil in a") + (typeOut == OUTPUT_RINGCT || typeOut == OUTPUT_CT ? " stealth" : "") + " payment to a given address" + (typeOut == OUTPUT_CT ? " in ringct veil" : "") + ".\n";
 
     rv += HelpRequiringPassphrase(pwallet.get());
 
-    rv +=   "\nArguments:\n"
-            "1. \"address\"     (string, required) The address to send to.\n"
-            "2. \"amount\"      (numeric or string, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
-            "3. \"comment\"     (string, optional) A comment used to store what the transaction is for. \n"
-            "                            This is not part of the transaction, just kept in your wallet.\n"
-            "4. \"comment_to\"  (string, optional) A comment to store the name of the person or organization \n"
-            "                            to which you're sending the transaction. This is not part of the \n"
-            "                            transaction, just kept in your wallet.\n"
-            "5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
-            "                            The recipient will receive less " + CURRENCY_UNIT + " than you enter in the amount field.\n"
-            "6. \"narration\"   (string, optional) Up to 24 characters sent with the transaction.\n"
-                                                                                                                               "                            The narration is stored in the blockchain and is sent encrypted when destination is a stealth address and uncrypted otherwise.\n";
+    rv += "\nArguments:\n"
+          "1. \"address\"     (string, required) The address to send to.\n"
+          "2. \"amount\"      (numeric or string, required) The amount in " +
+          CURRENCY_UNIT + " to send. eg 0.1\n"
+                          "3. \"comment\"     (string, optional) A comment used to store what the transaction is for. \n"
+                          "                            This is not part of the transaction, just kept in your wallet.\n"
+                          "4. \"comment_to\"  (string, optional) A comment to store the name of the person or organization \n"
+                          "                            to which you're sending the transaction. This is not part of the \n"
+                          "                            transaction, just kept in your wallet.\n"
+                          "5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
+                          "                            The recipient will receive less " +
+          CURRENCY_UNIT + " than you enter in the amount field.\n"
+                          "6. \"narration\"   (string, optional) Up to 24 characters sent with the transaction.\n"
+                          "                            The narration is stored in the blockchain and is sent encrypted when destination is a stealth address and uncrypted otherwise.\n";
     if (typeIn == OUTPUT_RINGCT)
         rv +=
-                "7. ringsize        (int, optional, default=4).\n"
-                "8. inputs_per_sig  (int, optional, default=32).\n"
-                "9. inputs_per_tx   (int, optional, default=0, max=32). Allows sending in multiple transactions if necessary.\n"
-                "                            If 0, will attempt to accomplish in one transaction.\n"
-                "                            If greater than 0, may use multiple transactions,\n"
-                "                            and will sweep dust into change using extra input slots if possible.\n";
+            "7. ringsize        (int, optional, default=4).\n"
+            "8. inputs_per_sig  (int, optional, default=32).\n"
+            "9. inputs_per_tx   (int, optional, default=0, max=32). Allows sending in multiple transactions if necessary.\n"
+            "                            If 0, will attempt to accomplish in one transaction.\n"
+            "                            If greater than 0, may use multiple transactions,\n"
+            "                            and will sweep dust into change using extra input slots if possible.\n";
     else if (typeIn == OUTPUT_CT)
         rv += "7. inputs_per_tx   (int, optional, default=0, max=32). Allows sending in multiple transactions if necessary.\n"
               "                            If 0, will attempt to accomplish in one transaction.\n"
@@ -762,11 +753,10 @@ static std::string SendHelp(std::shared_ptr<CWallet> pwallet, OutputTypes typeIn
               "                            and will sweep dust into change using extra input slots if possible.\n";
 
     rv +=
-            "\nResult:\n"
-            "\"txid\"           (string) The transaction id.\n";
+        "\nResult:\n"
+        "\"txid\"           (string) The transaction id.\n";
 
-    rv +=   "\nExamples:\n"
-            + HelpExampleCli(cmd, "\"SPGyji8uZFip6H15GUfj6bsutRVLsCyBFL3P7k7T7MUDRaYU8GfwUHpfxonLFAvAwr2RkigyGfTgWMfzLAAP8KMRHq7RE8cwpEEekH\" 0.1");
+    rv += "\nExamples:\n" + HelpExampleCli(cmd, "\"SPGyji8uZFip6H15GUfj6bsutRVLsCyBFL3P7k7T7MUDRaYU8GfwUHpfxonLFAvAwr2RkigyGfTgWMfzLAAP8KMRHq7RE8cwpEEekH\" 0.1");
 
     return rv;
 }
@@ -958,55 +948,57 @@ static UniValue sendringcttoringct(const JSONRPCRequest& request)
     return SendToInner(request, OUTPUT_RINGCT, OUTPUT_RINGCT);
 }
 
-UniValue sendtypeto(const JSONRPCRequest &request)
+UniValue sendtypeto(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
         return NullUniValue;
     if (request.fHelp || request.params.size() < 3 || request.params.size() > 10)
         throw std::runtime_error(
-                "sendtypeto \"typein\" \"typeout\" [{address: , amount: , narr: , subfee:},...] (\"comment\" \"comment-to\" ringsize inputs_per_sig test_fee coin_control inputs_per_tx)\n"
-                "\nSend basecoin to multiple outputs.\n"
-                + HelpRequiringPassphrase(wallet.get()) +
-                "\nArguments:\n"
-                "1. \"typein\"          (string, required) basecoin/stealth/ringct\n"
-                "2. \"typeout\"         (string, required) basecoin/stealth/ringct\n"
-                "3. \"outputs\"         (json, required) Array of output objects\n"
-                "    3.1 \"address\"    (string, required) The address to send to.\n"
-                "    3.2 \"amount\"     (numeric or string, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
-                "    3.x \"narr\"       (string, optional) Up to 24 character narration sent with the transaction.\n"
-                "    3.x \"subfee\"     (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
-                "    3.x \"script\"     (string, optional) Hex encoded script, will override the address.\n"
-                "4. \"comment\"         (string, optional) A comment used to store what the transaction is for. \n"
-                "                            This is not part of the transaction, just kept in your wallet.\n"
-                "5. \"comment_to\"      (string, optional) A comment to store the name of the person or organization \n"
-                "                            to which you're sending the transaction. This is not part of the \n"
-                "                            transaction, just kept in your wallet.\n"
-                "6. ringsize         (int, optional, default=4) Only applies when typein is ringct.\n"
-                "7. inputs_per_sig   (int, optional, default=32) Only applies when typein is ringct.\n"
-                "8. test_fee         (bool, optional, default=false) Only return the fee it would cost to send, txn is discarded.\n"
-                "9. coin_control     (json, optional) Coincontrol object.\n"
-                "   {\"changeaddress\": ,\n"
-                "    \"inputs\": [{\"tx\":, \"n\":},...],\n"
-                "    \"replaceable\": boolean,\n"
-                "       Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
-                "    \"conf_target\": numeric,\n"
-                "       Confirmation target (in blocks)\n"
-                "    \"estimate_mode\": string,\n"
-                "       The fee estimate mode, must be one of:\n"
-                "           \"UNSET\"\n"
-                "           \"ECONOMICAL\"\n"
-                "           \"CONSERVATIVE\"\n"
-                "     \"feeRate\"                (numeric, optional, default not set: makes wallet determine the fee) Set a specific feerate (" + CURRENCY_UNIT + " per KB)\n"
-                "   }\n"
-                "10. inputs_per_tx  (int, optional, default=0). Allows sending in multiple transactions if necessary.\n"
-                "                            If 0, will attempt to accomplish in one transaction.\n"
-                "                            If greater than 0, may use multiple transactions,\n"
-                "                            and will sweep dust into change using extra input slots if possible.\n"
-                "\nResult:\n"
-                "\"txid\"              (string) The transaction id.\n"
-                "\nExamples:\n"
-                + HelpExampleCli("sendtypeto", "ringct basecoin \"[{\\\"address\\\":\\\"PbpVcjgYatnkKgveaeqhkeQBFwjqR7jKBR\\\",\\\"amount\\\":0.1}]\""));
+            "sendtypeto \"typein\" \"typeout\" [{address: , amount: , narr: , subfee:},...] (\"comment\" \"comment-to\" ringsize inputs_per_sig test_fee coin_control inputs_per_tx)\n"
+            "\nSend basecoin to multiple outputs.\n" +
+            HelpRequiringPassphrase(wallet.get()) +
+            "\nArguments:\n"
+            "1. \"typein\"          (string, required) basecoin/stealth/ringct\n"
+            "2. \"typeout\"         (string, required) basecoin/stealth/ringct\n"
+            "3. \"outputs\"         (json, required) Array of output objects\n"
+            "    3.1 \"address\"    (string, required) The address to send to.\n"
+            "    3.2 \"amount\"     (numeric or string, required) The amount in " +
+            CURRENCY_UNIT + " to send. eg 0.1\n"
+                            "    3.x \"narr\"       (string, optional) Up to 24 character narration sent with the transaction.\n"
+                            "    3.x \"subfee\"     (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
+                            "    3.x \"script\"     (string, optional) Hex encoded script, will override the address.\n"
+                            "4. \"comment\"         (string, optional) A comment used to store what the transaction is for. \n"
+                            "                            This is not part of the transaction, just kept in your wallet.\n"
+                            "5. \"comment_to\"      (string, optional) A comment to store the name of the person or organization \n"
+                            "                            to which you're sending the transaction. This is not part of the \n"
+                            "                            transaction, just kept in your wallet.\n"
+                            "6. ringsize         (int, optional, default=4) Only applies when typein is ringct.\n"
+                            "7. inputs_per_sig   (int, optional, default=32) Only applies when typein is ringct.\n"
+                            "8. test_fee         (bool, optional, default=false) Only return the fee it would cost to send, txn is discarded.\n"
+                            "9. coin_control     (json, optional) Coincontrol object.\n"
+                            "   {\"changeaddress\": ,\n"
+                            "    \"inputs\": [{\"tx\":, \"n\":},...],\n"
+                            "    \"replaceable\": boolean,\n"
+                            "       Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
+                            "    \"conf_target\": numeric,\n"
+                            "       Confirmation target (in blocks)\n"
+                            "    \"estimate_mode\": string,\n"
+                            "       The fee estimate mode, must be one of:\n"
+                            "           \"UNSET\"\n"
+                            "           \"ECONOMICAL\"\n"
+                            "           \"CONSERVATIVE\"\n"
+                            "     \"feeRate\"                (numeric, optional, default not set: makes wallet determine the fee) Set a specific feerate (" +
+            CURRENCY_UNIT + " per KB)\n"
+                            "   }\n"
+                            "10. inputs_per_tx  (int, optional, default=0). Allows sending in multiple transactions if necessary.\n"
+                            "                            If 0, will attempt to accomplish in one transaction.\n"
+                            "                            If greater than 0, may use multiple transactions,\n"
+                            "                            and will sweep dust into change using extra input slots if possible.\n"
+                            "\nResult:\n"
+                            "\"txid\"              (string) The transaction id.\n"
+                            "\nExamples:\n" +
+            HelpExampleCli("sendtypeto", "ringct basecoin \"[{\\\"address\\\":\\\"PbpVcjgYatnkKgveaeqhkeQBFwjqR7jKBR\\\",\\\"amount\\\":0.1}]\""));
 
     std::string sTypeIn = request.params[0].get_str();
     std::string sTypeOut = request.params[1].get_str();
@@ -1033,63 +1025,60 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 4)
         throw std::runtime_error(
-                "createrawbasecointransaction [{\"txid\":\"id\",\"vout\":n},...] [{\"address\":amount,\"data\":\"hex\",...}] ( locktime replaceable \"fundfrombalance\" )\n"
-                "\nCreate a transaction spending the given inputs and creating new confidential outputs.\n"
-                "Outputs can be addresses or data.\n"
-                "Returns hex-encoded raw transaction.\n"
-                "Note that the transaction's inputs are not signed, and\n"
-                "it is not stored in the wallet or transmitted to the network.\n"
+            "createrawbasecointransaction [{\"txid\":\"id\",\"vout\":n},...] [{\"address\":amount,\"data\":\"hex\",...}] ( locktime replaceable \"fundfrombalance\" )\n"
+            "\nCreate a transaction spending the given inputs and creating new confidential outputs.\n"
+            "Outputs can be addresses or data.\n"
+            "Returns hex-encoded raw transaction.\n"
+            "Note that the transaction's inputs are not signed, and\n"
+            "it is not stored in the wallet or transmitted to the network.\n"
 
-                "\nArguments:\n"
-                "1. \"inputs\"                (array, required) A json array of json objects\n"
-                "     [\n"
-                "       {\n"
-                "         \"txid\":\"id\",              (string, required) The transaction id\n"
-                "         \"vout\":n,                   (numeric, required) The output number\n"
-                "         \"sequence\":n                (numeric, optional) The sequence number\n"
-                "         \"blindingfactor\":\"hex\",   (string, optional) The blinding factor, required if blinded input is unknown to wallet\n"
-                "       } \n"
-                "       ,...\n"
-                "     ]\n"
-                "2. \"outputs\"               (array, required) A json array of json objects\n"
-                "     [\n"
-                "       {\n"
-                "         \"address\": \"str\"          (string, required) The address\n"
-                "         \"amount\": x.xxx           (numeric or string, required) The numeric value (can be string) in " + CURRENCY_UNIT + " of the output\n"
-                "         \"data\": \"hex\",            (string, required) The key is \"data\", the value is hex encoded data\n"
-                "         \"data_ct_fee\": x.xxx,     (numeric, optional) If type is \"data\" and output is at index 0, then it will be treated as a CT fee output\n"
-                "         \"script\": \"str\",          (string, optional) Specify script directly.\n"
-                "         \"type\": \"str\",            (string, optional, default=\"plain\") The type of output to create, plain, blind or anon.\n"
-                "         \"pubkey\": \"hex\",          (string, optional) The key is \"pubkey\", the value is hex encoded public key for encrypting the metadata\n"
-                //            "         \"subfee\":bool      (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
-                "         \"narration\" \"str\",        (string, optional) Up to 24 character narration sent with the transaction.\n"
-                "         \"blindingfactor\" \"hex\",   (string, optional) Blinding factor to use. Blinding factor is randomly generated if not specified.\n"
-                "         \"rangeproof_params\":  ,     (object, optional) Overwrite the rangeproof parameters of an output \n"
-                "           {\n"
-                "             \"min_value\": x.xxx            (numeric, required) the minimum value to prove for.\n"
-                "             \"ct_exponent\": x              (numeric, required) the exponent to  use.\n"
-                "             \"ct_bits\": x                  (numeric, required) the amount of bits to prove for.\n"
-                "           }\n"
-                "         \"ephemeral_key\" \"hex\",    (string, optional) Ephemeral secret key for blinded outputs.\n"
-                "         \"nonce\":\"hex\"\n           (string, optional) Nonce for blinded outputs.\n"
-                "       }\n"
-                "       ,...\n"
-                "     ]\n"
-                "3. locktime                  (numeric, optional, default=0) Raw locktime. Non-0 value also locktime-activates inputs\n"
-                "4. replaceable               (boolean, optional, default=false) Marks this transaction as BIP125 replaceable.\n"
-                "                             Allows this transaction to be replaced by a transaction with higher fees. If provided, it is an error if explicit sequence numbers are incompatible.\n"
-                //"5. \"fundfrombalance\"       (string, optional, default=none) Fund transaction from standard, blinded or anon balance.\n"
-                "\nResult:\n"
-                "{\n"
-                "  \"transaction\"      (string) hex string of the transaction\n"
-                "  \"amounts\"          (json) Coin values of outputs with blinding factors of blinded outputs.\n"
-                "}\n"
-                "\nExamples:\n"
-                + HelpExampleCli("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"address\\\":0.01}\"")
-                + HelpExampleCli("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"data\\\":\\\"00010203\\\"}\"")
-                + HelpExampleRpc("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"address\\\":0.01}\"")
-                + HelpExampleRpc("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"data\\\":\\\"00010203\\\"}\"")
-        );
+            "\nArguments:\n"
+            "1. \"inputs\"                (array, required) A json array of json objects\n"
+            "     [\n"
+            "       {\n"
+            "         \"txid\":\"id\",              (string, required) The transaction id\n"
+            "         \"vout\":n,                   (numeric, required) The output number\n"
+            "         \"sequence\":n                (numeric, optional) The sequence number\n"
+            "         \"blindingfactor\":\"hex\",   (string, optional) The blinding factor, required if blinded input is unknown to wallet\n"
+            "       } \n"
+            "       ,...\n"
+            "     ]\n"
+            "2. \"outputs\"               (array, required) A json array of json objects\n"
+            "     [\n"
+            "       {\n"
+            "         \"address\": \"str\"          (string, required) The address\n"
+            "         \"amount\": x.xxx           (numeric or string, required) The numeric value (can be string) in " +
+            CURRENCY_UNIT + " of the output\n"
+                            "         \"data\": \"hex\",            (string, required) The key is \"data\", the value is hex encoded data\n"
+                            "         \"data_ct_fee\": x.xxx,     (numeric, optional) If type is \"data\" and output is at index 0, then it will be treated as a CT fee output\n"
+                            "         \"script\": \"str\",          (string, optional) Specify script directly.\n"
+                            "         \"type\": \"str\",            (string, optional, default=\"plain\") The type of output to create, plain, blind or anon.\n"
+                            "         \"pubkey\": \"hex\",          (string, optional) The key is \"pubkey\", the value is hex encoded public key for encrypting the metadata\n"
+                            //            "         \"subfee\":bool      (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
+                            "         \"narration\" \"str\",        (string, optional) Up to 24 character narration sent with the transaction.\n"
+                            "         \"blindingfactor\" \"hex\",   (string, optional) Blinding factor to use. Blinding factor is randomly generated if not specified.\n"
+                            "         \"rangeproof_params\":  ,     (object, optional) Overwrite the rangeproof parameters of an output \n"
+                            "           {\n"
+                            "             \"min_value\": x.xxx            (numeric, required) the minimum value to prove for.\n"
+                            "             \"ct_exponent\": x              (numeric, required) the exponent to  use.\n"
+                            "             \"ct_bits\": x                  (numeric, required) the amount of bits to prove for.\n"
+                            "           }\n"
+                            "         \"ephemeral_key\" \"hex\",    (string, optional) Ephemeral secret key for blinded outputs.\n"
+                            "         \"nonce\":\"hex\"\n           (string, optional) Nonce for blinded outputs.\n"
+                            "       }\n"
+                            "       ,...\n"
+                            "     ]\n"
+                            "3. locktime                  (numeric, optional, default=0) Raw locktime. Non-0 value also locktime-activates inputs\n"
+                            "4. replaceable               (boolean, optional, default=false) Marks this transaction as BIP125 replaceable.\n"
+                            "                             Allows this transaction to be replaced by a transaction with higher fees. If provided, it is an error if explicit sequence numbers are incompatible.\n"
+                            //"5. \"fundfrombalance\"       (string, optional, default=none) Fund transaction from standard, blinded or anon balance.\n"
+                            "\nResult:\n"
+                            "{\n"
+                            "  \"transaction\"      (string) hex string of the transaction\n"
+                            "  \"amounts\"          (json) Coin values of outputs with blinding factors of blinded outputs.\n"
+                            "}\n"
+                            "\nExamples:\n" +
+            HelpExampleCli("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"address\\\":0.01}\"") + HelpExampleCli("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"data\\\":\\\"00010203\\\"}\"") + HelpExampleRpc("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"address\\\":0.01}\"") + HelpExampleRpc("createrawbasecointransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"data\\\":\\\"00010203\\\"}\""));
 
     EnsureWalletIsUnlocked(wallet.get());
 
@@ -1150,7 +1139,7 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
             }
         }
 
-        const UniValue &blindObj = find_value(o, "blindingfactor");
+        const UniValue& blindObj = find_value(o, "blindingfactor");
         if (blindObj.isStr()) {
             std::string s = blindObj.get_str();
             if (!IsHex(s) || !(s.size() == 64)) {
@@ -1169,23 +1158,20 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
 
     std::vector<CTempRecipient> vecSend;
     for (size_t idx = 0; idx < outputs.size(); idx++) {
-        const UniValue &o = outputs[idx].get_obj();
+        const UniValue& o = outputs[idx].get_obj();
         CTempRecipient r;
 
         uint8_t nType = OUTPUT_STANDARD;
-        const UniValue &typeObj = find_value(o, "type");
+        const UniValue& typeObj = find_value(o, "type");
         if (typeObj.isStr()) {
             std::string s = typeObj.get_str();
             if (s == "standard") {
                 nType = OUTPUT_STANDARD;
-            } else
-            if (s == "stealth") {
+            } else if (s == "stealth") {
                 nType = OUTPUT_CT;
-            } else
-            if (s == "ringct") {
+            } else if (s == "ringct") {
                 nType = OUTPUT_RINGCT;
-            } else
-            if (s == "data") {
+            } else if (s == "data") {
                 nType = OUTPUT_DATA;
             } else {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown output type.");
@@ -1285,7 +1271,7 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
             }
 
             if (o["rangeproof_params"].isObject()) {
-                const UniValue &rangeproofParams = o["rangeproof_params"].get_obj();
+                const UniValue& rangeproofParams = o["rangeproof_params"].get_obj();
 
                 if (!rangeproofParams["min_value"].isNum() || !rangeproofParams["ct_exponent"].isNum() || !rangeproofParams["ct_bits"].isNum()) {
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "All range proof parameters must be numeric.");
@@ -1313,7 +1299,7 @@ static UniValue createrawbasecointransaction(const JSONRPCRequest& request)
     CAmount nFeeRet = 0;
     //bool fFirst = true;
     for (size_t i = 0; i < vecSend.size(); ++i) {
-        auto &r = vecSend[i];
+        auto& r = vecSend[i];
 
         //r.ApplySubFee(nFeeRet, nSubtractFeeFromAmount, fFirst);
 
@@ -1372,81 +1358,79 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() < 4 || request.params.size() > 5)
         throw std::runtime_error(
-                "fundrawtransactionfrom \"input_type\" \"hexstring\" input_amounts output_amounts ( options iswitness )\n"
-                "\nAdd inputs to a transaction until it has enough in value to meet its out value.\n"
-                "This will not modify existing inputs, and will add at most one change output to the outputs.\n"
-                "No existing outputs will be modified unless \"subtractFeeFromOutputs\" is specified.\n"
-                "Note that inputs which were signed may need to be resigned after completion since in/outputs have been added.\n"
-                "The inputs added will not be signed, use signrawtransaction for that.\n"
-                "Note that all existing inputs must have their previous output transaction be in the wallet or have their amount and blinding factor specified in input_amounts.\n"
-                /*"Note that all inputs selected must be of standard form and P2SH scripts must be\n"
+            "fundrawtransactionfrom \"input_type\" \"hexstring\" input_amounts output_amounts ( options iswitness )\n"
+            "\nAdd inputs to a transaction until it has enough in value to meet its out value.\n"
+            "This will not modify existing inputs, and will add at most one change output to the outputs.\n"
+            "No existing outputs will be modified unless \"subtractFeeFromOutputs\" is specified.\n"
+            "Note that inputs which were signed may need to be resigned after completion since in/outputs have been added.\n"
+            "The inputs added will not be signed, use signrawtransaction for that.\n"
+            "Note that all existing inputs must have their previous output transaction be in the wallet or have their amount and blinding factor specified in input_amounts.\n"
+            /*"Note that all inputs selected must be of standard form and P2SH scripts must be\n"
                 "in the wallet using importaddress or addmultisigaddress (to calculate fees).\n"
                 "You can see whether this is the case by checking the \"solvable\" field in the listunspent output.\n"
                 "Only pay-to-pubkey, multisig, and P2SH versions thereof are currently supported for watch-only\n"*/
-                "\nArguments:\n"
-                "1. \"input_type\"          (string, required) The type of inputs to use standard/anon/blind.\n"
-                "2. \"hexstring\"           (string, required) The hex string of the raw transaction\n"
-                "3. input_amounts         (object, required)\n"
-                "   {\n"
-                "       \"n\":\n"
-                "         {\n"
-                "           \"value\":amount\n"
-                "           \"blind\":\"hex\"\n"
-                "           \"witnessstack\":[\"hex\",]\n" // needed to estimate fee
-                //"           \"script\":\"hex\"\n"
-                //"           \"redeemscript\":\"hex\"\n"
-                "         }\n"
-                "   }\n"
-                "4. output_amounts        (object, required)\n"
-                "   {\n"
-                "       \"n\":\n"
-                "         {\n"
-                "           \"value\":amount\n"
-                //"           \"blind\":\"hex\"\n"
-                "           \"nonce\":\"hex\"\n"
-                "         }\n"
-                "   }\n"
-                "5. \"options\"             (object, optional)\n"
-                "   {\n"
-                "     \"changeAddress\"          (string, optional, default pool address) The address to receive the change\n"
-                "     \"changePosition\"         (numeric, optional, default random) The index of the change output\n"
-                "     \"change_type\"            (string, optional) The output type to use. Only valid if changeAddress is not specified. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\". Default is set by -changetype.\n"
-                "     \"includeWatching\"        (boolean, optional, default false) Also select inputs which are watch only\n"
-                "     \"lockUnspents\"           (boolean, optional, default false) Lock selected unspent outputs\n"
-                "     \"feeRate\"                (numeric, optional, default not set: makes wallet determine the fee) Set a specific fee rate in " + CURRENCY_UNIT + "/kB\n"
-                "     \"subtractFeeFromOutputs\" (array, optional) A json array of integers.\n"
-                "                              The fee will be equally deducted from the amount of each specified output.\n"
-                "                              The outputs are specified by their zero-based index, before any change output is added.\n"
-                "                              Those recipients will receive less coins than you enter in their corresponding amount field.\n"
-                "                              If no outputs are specified here, the sender pays the fee.\n"
-                "                                  [vout_index,...]\n"
-                "     \"replaceable\"            (boolean, optional) Marks this transaction as BIP125 replaceable.\n"
-                "     \"allow_other_inputs\"     (boolean, optional, default=true) Allow inputs to be added if any inputs already exist.\n"
-                "     \"allow_change_output\"    (boolean, optional, default=true) Allow change output to be added if needed (only for 'blind' input_type).\n"
-                "                              Allows this transaction to be replaced by a transaction with higher fees\n"
-                "     \"conf_target\"            (numeric, optional) Confirmation target (in blocks)\n"
-                "     \"estimate_mode\"          (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
-                "         \"UNSET\"\n"
-                "         \"ECONOMICAL\"\n"
-                "         \"CONSERVATIVE\"\n"
-                "   }\n"
-                "\nResult:\n"
-                "{\n"
-                "  \"hex\":       \"value\", (string)  The resulting raw transaction (hex-encoded string)\n"
-                "  \"fee\":       n,       (numeric) Fee in " + CURRENCY_UNIT + " the resulting transaction pays\n"
-                "  \"changepos\": n        (numeric) The position of the added change output, or -1\n"
-                "  \"output_amounts\": obj (json) Output values and blinding factors\n"
-                "}\n"
-                "\nExamples:\n"
-                "\nCreate a transaction with no inputs\n"
-                + HelpExampleCli("createrawctransaction", "\"[]\" \"{\\\"myaddress\\\":0.01}\"") +
-                "\nAdd sufficient unsigned inputs to meet the output value\n"
-                + HelpExampleCli("fundrawtransactionfrom", "\"blind\" \"rawtransactionhex\"") +
-                "\nSign the transaction\n"
-                + HelpExampleCli("signrawtransactionwithwallet", "\"fundedtransactionhex\"") +
-                "\nSend the transaction\n"
-                + HelpExampleCli("sendrawtransaction", "\"signedtransactionhex\"")
-        );
+            "\nArguments:\n"
+            "1. \"input_type\"          (string, required) The type of inputs to use standard/anon/blind.\n"
+            "2. \"hexstring\"           (string, required) The hex string of the raw transaction\n"
+            "3. input_amounts         (object, required)\n"
+            "   {\n"
+            "       \"n\":\n"
+            "         {\n"
+            "           \"value\":amount\n"
+            "           \"blind\":\"hex\"\n"
+            "           \"witnessstack\":[\"hex\",]\n" // needed to estimate fee
+            //"           \"script\":\"hex\"\n"
+            //"           \"redeemscript\":\"hex\"\n"
+            "         }\n"
+            "   }\n"
+            "4. output_amounts        (object, required)\n"
+            "   {\n"
+            "       \"n\":\n"
+            "         {\n"
+            "           \"value\":amount\n"
+            //"           \"blind\":\"hex\"\n"
+            "           \"nonce\":\"hex\"\n"
+            "         }\n"
+            "   }\n"
+            "5. \"options\"             (object, optional)\n"
+            "   {\n"
+            "     \"changeAddress\"          (string, optional, default pool address) The address to receive the change\n"
+            "     \"changePosition\"         (numeric, optional, default random) The index of the change output\n"
+            "     \"change_type\"            (string, optional) The output type to use. Only valid if changeAddress is not specified. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\". Default is set by -changetype.\n"
+            "     \"includeWatching\"        (boolean, optional, default false) Also select inputs which are watch only\n"
+            "     \"lockUnspents\"           (boolean, optional, default false) Lock selected unspent outputs\n"
+            "     \"feeRate\"                (numeric, optional, default not set: makes wallet determine the fee) Set a specific fee rate in " +
+            CURRENCY_UNIT + "/kB\n"
+                            "     \"subtractFeeFromOutputs\" (array, optional) A json array of integers.\n"
+                            "                              The fee will be equally deducted from the amount of each specified output.\n"
+                            "                              The outputs are specified by their zero-based index, before any change output is added.\n"
+                            "                              Those recipients will receive less coins than you enter in their corresponding amount field.\n"
+                            "                              If no outputs are specified here, the sender pays the fee.\n"
+                            "                                  [vout_index,...]\n"
+                            "     \"replaceable\"            (boolean, optional) Marks this transaction as BIP125 replaceable.\n"
+                            "     \"allow_other_inputs\"     (boolean, optional, default=true) Allow inputs to be added if any inputs already exist.\n"
+                            "     \"allow_change_output\"    (boolean, optional, default=true) Allow change output to be added if needed (only for 'blind' input_type).\n"
+                            "                              Allows this transaction to be replaced by a transaction with higher fees\n"
+                            "     \"conf_target\"            (numeric, optional) Confirmation target (in blocks)\n"
+                            "     \"estimate_mode\"          (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
+                            "         \"UNSET\"\n"
+                            "         \"ECONOMICAL\"\n"
+                            "         \"CONSERVATIVE\"\n"
+                            "   }\n"
+                            "\nResult:\n"
+                            "{\n"
+                            "  \"hex\":       \"value\", (string)  The resulting raw transaction (hex-encoded string)\n"
+                            "  \"fee\":       n,       (numeric) Fee in " +
+            CURRENCY_UNIT + " the resulting transaction pays\n"
+                            "  \"changepos\": n        (numeric) The position of the added change output, or -1\n"
+                            "  \"output_amounts\": obj (json) Output values and blinding factors\n"
+                            "}\n"
+                            "\nExamples:\n"
+                            "\nCreate a transaction with no inputs\n" +
+            HelpExampleCli("createrawctransaction", "\"[]\" \"{\\\"myaddress\\\":0.01}\"") +
+            "\nAdd sufficient unsigned inputs to meet the output value\n" + HelpExampleCli("fundrawtransactionfrom", "\"blind\" \"rawtransactionhex\"") +
+            "\nSign the transaction\n" + HelpExampleCli("signrawtransactionwithwallet", "\"fundedtransactionhex\"") +
+            "\nSend the transaction\n" + HelpExampleCli("sendrawtransaction", "\"signedtransactionhex\""));
 
     RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ, UniValue::VOBJ, UniValue::VOBJ}, true);
 
@@ -1472,21 +1456,21 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
         UniValue options = request.params[4];
 
         RPCTypeCheckObj(options,
-                        {
-                                {"changeAddress", UniValueType(UniValue::VSTR)},
-                                {"changePosition", UniValueType(UniValue::VNUM)},
-                                {"change_type", UniValueType(UniValue::VSTR)},
-                                {"includeWatching", UniValueType(UniValue::VBOOL)},
-                                {"lockUnspents", UniValueType(UniValue::VBOOL)},
-                                {"feeRate", UniValueType()}, // will be checked below
-                                {"subtractFeeFromOutputs", UniValueType(UniValue::VARR)},
-                                {"replaceable", UniValueType(UniValue::VBOOL)},
-                                {"allow_other_inputs", UniValueType(UniValue::VBOOL)},
-                                {"allow_change_output", UniValueType(UniValue::VBOOL)},
-                                {"conf_target", UniValueType(UniValue::VNUM)},
-                                {"estimate_mode", UniValueType(UniValue::VSTR)},
-                        },
-                        true, true);
+            {
+                {"changeAddress", UniValueType(UniValue::VSTR)},
+                {"changePosition", UniValueType(UniValue::VNUM)},
+                {"change_type", UniValueType(UniValue::VSTR)},
+                {"includeWatching", UniValueType(UniValue::VBOOL)},
+                {"lockUnspents", UniValueType(UniValue::VBOOL)},
+                {"feeRate", UniValueType()}, // will be checked below
+                {"subtractFeeFromOutputs", UniValueType(UniValue::VARR)},
+                {"replaceable", UniValueType(UniValue::VBOOL)},
+                {"allow_other_inputs", UniValueType(UniValue::VBOOL)},
+                {"allow_change_output", UniValueType(UniValue::VBOOL)},
+                {"conf_target", UniValueType(UniValue::VNUM)},
+                {"estimate_mode", UniValueType(UniValue::VSTR)},
+            },
+            true, true);
 
         if (options.exists("changeAddress")) {
             CTxDestination dest = DecodeDestination(options["changeAddress"].get_str());
@@ -1596,10 +1580,10 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
 
     std::vector<CTempRecipient> vecSend(nOutputs);
 
-    const std::vector<std::string> &vInputKeys = inputAmounts.getKeys();
+    const std::vector<std::string>& vInputKeys = inputAmounts.getKeys();
     auto pAnonWallet = wallet->GetAnonWallet();
     pAnonWallet->mapTempRecords.clear();
-    for (const std::string &sKey : vInputKeys) {
+    for (const std::string& sKey : vInputKeys) {
         int64_t n;
         if (!ParseInt64(sKey, &n) || n >= (int64_t)tx.vin.size() || n < 0) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Bad index for input blinding factor.");
@@ -1633,7 +1617,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
         r.SetValue(AmountFromValue(inputAmounts[sKey]["value"]));
 
         if (inputAmounts[sKey]["witnessstack"].isArray()) {
-            const UniValue &stack = inputAmounts[sKey]["witnessstack"].get_array();
+            const UniValue& stack = inputAmounts[sKey]["witnessstack"].get_array();
 
             for (size_t k = 0; k < stack.size(); ++k) {
                 if (!stack[k].isStr()) {
@@ -1658,22 +1642,21 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
         coinControl.m_inputData[tx.vin[n].prevout] = im;
     }
 
-    const std::vector<std::string> &vOutputKeys = outputAmounts.getKeys();
-    for (const std::string &sKey : vOutputKeys) {
+    const std::vector<std::string>& vOutputKeys = outputAmounts.getKeys();
+    for (const std::string& sKey : vOutputKeys) {
         int64_t n;
         if (!ParseInt64(sKey, &n) || n >= (int64_t)tx.GetNumVOuts() || n < 0) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Bad index for output blinding factor.");
         }
 
-        const auto &txout = tx.vpout[n];
+        const auto& txout = tx.vpout[n];
 
         if (!outputAmounts[sKey]["value"].isNull()) {
             mOutputAmounts[n] = AmountFromValue(outputAmounts[sKey]["value"]);
         }
 
-        if (outputAmounts[sKey]["nonce"].isStr()
-            && txout->GetPRangeproof()) {
-            CTempRecipient &r = vecSend[n];
+        if (outputAmounts[sKey]["nonce"].isStr() && txout->GetPRangeproof()) {
+            CTempRecipient& r = vecSend[n];
             std::string s = outputAmounts[sKey]["nonce"].get_str();
             if (!IsHex(s) || !(s.size() == 64)) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Nonce must be 32 bytes and hex encoded.");
@@ -1689,8 +1672,8 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             memset(msg, 0, mlen);
             uint64_t amountOut;
             if (1 != secp256k1_rangeproof_rewind(secp256k1_ctx_blind, blindOut, &amountOut, msg, &mlen, r.nonce.begin(),
-                    &min_value, &max_value, txout->GetPCommitment(), txout->GetPRangeproof()->data(), txout->GetPRangeproof()->size(),
-                    nullptr, 0, secp256k1_generator_h)) {
+                         &min_value, &max_value, txout->GetPCommitment(), txout->GetPRangeproof()->data(), txout->GetPRangeproof()->size(),
+                         nullptr, 0, secp256k1_generator_h)) {
                 throw JSONRPCError(RPC_MISC_ERROR, strprintf("secp256k1_rangeproof_rewind failed, output %d.", n));
             }
 
@@ -1700,7 +1683,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             mOutputBlinds[n] = blind;
             mOutputAmounts[n] = amountOut;
 
-            msg[mlen-1] = '\0';
+            msg[mlen - 1] = '\0';
             size_t nNarr = strlen((const char*)msg);
             if (nNarr > 0) {
                 r.sNarration.assign((const char*)msg, nNarr);
@@ -1729,8 +1712,8 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
     CAmount nTotalOutput = 0;
 
     for (size_t i = 0; i < tx.vpout.size(); ++i) {
-        const auto &txout = tx.vpout[i];
-        CTempRecipient &r = vecSend[i];
+        const auto& txout = tx.vpout[i];
+        CTempRecipient& r = vecSend[i];
 
         if (txout->IsType(OUTPUT_CT) || txout->IsType(OUTPUT_RINGCT)) {
             // Check commitment matches
@@ -1814,7 +1797,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
 
     tx.vpout = wtx.tx->vpout;
     // keep existing sequences
-    for (const auto &txin : wtx.tx->vin) {
+    for (const auto& txin : wtx.tx->vin) {
         if (!coinControl.IsSelected(txin.prevout)) {
             tx.vin.push_back(txin);
         }
@@ -1827,7 +1810,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
 
     UniValue outputValues(UniValue::VOBJ);
     for (size_t i = 0; i < vecSend.size(); ++i) {
-        auto &r = vecSend[i];
+        auto& r = vecSend[i];
 
         UniValue outputValue(UniValue::VOBJ);
         if (r.vBlind.size() == 32) {
@@ -1851,25 +1834,23 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
     return result;
 }
 
-static UniValue verifycommitment(const JSONRPCRequest &request)
+static UniValue verifycommitment(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 3)
         throw std::runtime_error(
-                "verifycommitment \"commitment\" \"blind\" amount\n"
-                "\nVerify value commitment.\n"
+            "verifycommitment \"commitment\" \"blind\" amount\n"
+            "\nVerify value commitment.\n"
 
-                "\nArguments:\n"
-                "1. \"commitment\"                     (string, required) The 33byte commitment hex string\n"
-                "2. \"blind\"                          (string, required) The 32byte blinding factor hex string\n"
-                "3. amount                           (numeric or string, required) The amount committed to\n"
-                "\nResult:\n"
-                "{\n"
-                "  \"result\": true,                   (boolean) If valid commitment, else throw error.\n"
-                "}\n"
-                "\nExamples:\n"
-                + HelpExampleCli("verifycommitment", "\"commitment\" \"blind\" 1.1")
-                + HelpExampleRpc("verifycommitment", "\"commitment\", \"blind\", 1.1")
-        );
+            "\nArguments:\n"
+            "1. \"commitment\"                     (string, required) The 33byte commitment hex string\n"
+            "2. \"blind\"                          (string, required) The 32byte blinding factor hex string\n"
+            "3. amount                           (numeric or string, required) The amount committed to\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"result\": true,                   (boolean) If valid commitment, else throw error.\n"
+            "}\n"
+            "\nExamples:\n" +
+            HelpExampleCli("verifycommitment", "\"commitment\" \"blind\" 1.1") + HelpExampleRpc("verifycommitment", "\"commitment\", \"blind\", 1.1"));
 
     RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VSTR});
 
@@ -1896,8 +1877,8 @@ static UniValue verifycommitment(const JSONRPCRequest &request)
 
     secp256k1_pedersen_commitment commitment;
     if (!secp256k1_pedersen_commit(secp256k1_ctx_blind,
-                                   &commitment, blind.begin(),
-                                   nValue, secp256k1_generator_h)) {
+            &commitment, blind.begin(),
+            nValue, secp256k1_generator_h)) {
         throw JSONRPCError(RPC_MISC_ERROR, strprintf("secp256k1_pedersen_commit failed."));
     }
 
@@ -1911,47 +1892,45 @@ static UniValue verifycommitment(const JSONRPCRequest &request)
     return result;
 }
 
-static UniValue verifyrawtransaction(const JSONRPCRequest &request)
+static UniValue verifyrawtransaction(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
-                "verifyrawtransaction \"hexstring\" ( [{\"txid\":\"id\",\"vout\":n,\"scriptPubKey\":\"hex\",\"redeemScript\":\"hex\"},...] returndecoded )\n"
-                "\nVerify inputs for raw transaction (serialized, hex-encoded).\n"
-                "The second optional argument (may be null) is an array of previous transaction outputs that\n"
-                "this transaction depends on but may not yet be in the block chain.\n"
-                "\nArguments:\n"
-                "1. \"hexstring\"                      (string, required) The transaction hex string\n"
-                "2. \"prevtxs\"                        (string, optional) An json array of previous dependent transaction outputs\n"
-                "     [                              (json array of json objects, or 'null' if none provided)\n"
-                "       {\n"
-                "         \"txid\":\"id\",               (string, required) The transaction id\n"
-                "         \"vout\":n,                  (numeric, required) The output number\n"
-                "         \"scriptPubKey\": \"hex\",     (string, required) script key\n"
-                //"         \"redeemScript\": \"hex\",     (string, required for P2SH or P2WSH) redeem script\n"
-                "         \"amount\": value            (numeric, required) The amount spent\n"
-                "         \"amount_commitment\": \"hex\",(string, required) The amount commitment spent\n"
-                "       }\n"
-                "       ,...\n"
-                "    ]\n"
-                "3. returndecoded                     (bool, optional) Return the decoded txn as a json object\n"
-                "\nResult:\n"
-                "{\n"
-                "  \"complete\" : true|false,          (boolean) If the transaction has a complete set of signatures\n"
-                "  \"errors\" : [                      (json array of objects) Script verification errors (if there are any)\n"
-                "    {\n"
-                "      \"txid\" : \"hash\",              (string) The hash of the referenced, previous transaction\n"
-                "      \"vout\" : n,                   (numeric) The index of the output to spent and used as input\n"
-                "      \"scriptSig\" : \"hex\",          (string) The hex-encoded signature script\n"
-                "      \"sequence\" : n,               (numeric) Script sequence number\n"
-                "      \"error\" : \"text\"              (string) Verification or signing error related to the input\n"
-                "    }\n"
-                "    ,...\n"
-                "  ]\n"
-                "}\n"
-                "\nExamples:\n"
-                + HelpExampleCli("verifyrawtransaction", "\"myhex\"")
-                + HelpExampleRpc("verifyrawtransaction", "\"myhex\"")
-        );
+            "verifyrawtransaction \"hexstring\" ( [{\"txid\":\"id\",\"vout\":n,\"scriptPubKey\":\"hex\",\"redeemScript\":\"hex\"},...] returndecoded )\n"
+            "\nVerify inputs for raw transaction (serialized, hex-encoded).\n"
+            "The second optional argument (may be null) is an array of previous transaction outputs that\n"
+            "this transaction depends on but may not yet be in the block chain.\n"
+            "\nArguments:\n"
+            "1. \"hexstring\"                      (string, required) The transaction hex string\n"
+            "2. \"prevtxs\"                        (string, optional) An json array of previous dependent transaction outputs\n"
+            "     [                              (json array of json objects, or 'null' if none provided)\n"
+            "       {\n"
+            "         \"txid\":\"id\",               (string, required) The transaction id\n"
+            "         \"vout\":n,                  (numeric, required) The output number\n"
+            "         \"scriptPubKey\": \"hex\",     (string, required) script key\n"
+            //"         \"redeemScript\": \"hex\",     (string, required for P2SH or P2WSH) redeem script\n"
+            "         \"amount\": value            (numeric, required) The amount spent\n"
+            "         \"amount_commitment\": \"hex\",(string, required) The amount commitment spent\n"
+            "       }\n"
+            "       ,...\n"
+            "    ]\n"
+            "3. returndecoded                     (bool, optional) Return the decoded txn as a json object\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"complete\" : true|false,          (boolean) If the transaction has a complete set of signatures\n"
+            "  \"errors\" : [                      (json array of objects) Script verification errors (if there are any)\n"
+            "    {\n"
+            "      \"txid\" : \"hash\",              (string) The hash of the referenced, previous transaction\n"
+            "      \"vout\" : n,                   (numeric) The index of the output to spent and used as input\n"
+            "      \"scriptSig\" : \"hex\",          (string) The hex-encoded signature script\n"
+            "      \"sequence\" : n,               (numeric) Script sequence number\n"
+            "      \"error\" : \"text\"              (string) Verification or signing error related to the input\n"
+            "    }\n"
+            "    ,...\n"
+            "  ]\n"
+            "}\n"
+            "\nExamples:\n" +
+            HelpExampleCli("verifyrawtransaction", "\"myhex\"") + HelpExampleRpc("verifyrawtransaction", "\"myhex\""));
 
     // TODO: verify amounts / commitment sum
 
@@ -1967,7 +1946,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
     CCoinsViewCache view(&viewDummy);
     {
         LOCK2(cs_main, mempool.cs);
-        CCoinsViewCache &viewChain = *pcoinsTip;
+        CCoinsViewCache& viewChain = *pcoinsTip;
         CCoinsViewMemPool viewMempool(&viewChain, mempool);
         view.SetBackend(viewMempool); // temporarily switch cache backend to db+mempool view
 
@@ -1990,11 +1969,11 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
             UniValue prevOut = p.get_obj();
 
             RPCTypeCheckObj(prevOut,
-                            {
-                                    {"txid", UniValueType(UniValue::VSTR)},
-                                    {"vout", UniValueType(UniValue::VNUM)},
-                                    {"scriptPubKey", UniValueType(UniValue::VSTR)},
-                            });
+                {
+                    {"txid", UniValueType(UniValue::VSTR)},
+                    {"vout", UniValueType(UniValue::VNUM)},
+                    {"scriptPubKey", UniValueType(UniValue::VSTR)},
+                });
 
             uint256 txid = ParseHashO(prevOut, "txid");
 
@@ -2015,7 +1994,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
 
                 if (!coin.IsSpent() && coin.out.scriptPubKey != scriptPubKey) {
                     std::string err("Previous output scriptPubKey mismatch:\n");
-                    err = err + ScriptToAsmStr(coin.out.scriptPubKey) + "\nvs:\n"+
+                    err = err + ScriptToAsmStr(coin.out.scriptPubKey) + "\nvs:\n" +
                           ScriptToAsmStr(scriptPubKey);
                     throw JSONRPCError(RPC_DESERIALIZATION_ERROR, err);
                 }
@@ -2084,8 +2063,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
         if (coin.nType == OUTPUT_STANDARD) {
             vchAmount.resize(8);
             memcpy(vchAmount.data(), &coin.out.nValue, 8);
-        } else
-        if (coin.nType == OUTPUT_CT) {
+        } else if (coin.nType == OUTPUT_CT) {
             vchAmount.resize(33);
             memcpy(vchAmount.data(), coin.commitment.data, 33);
         } else {
@@ -2116,23 +2094,21 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
     return result;
 };
 
-static UniValue importlightwalletaddress(const JSONRPCRequest &request)
+static UniValue importlightwalletaddress(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 3)
         throw std::runtime_error(
-                "importlightwalletaddress \"scan_secret\" \"spend_public\" \"created_height\" \"label\" num_prefix_bits \"prefix_num\" \"bech32\" \n"
-                "\nImport a stealth addresses for use for light wallet servers only\n"
-                "\nArguments:\n"
-                "1. \"scan_secret\"                      (string, required) Scan secret key\n"
-                "2. \"spend_public\"                     (string, required) Spend Public Key (watchonly)\n"
-                "3. \"created_height\"                   (string, required) The block height, this address was created at. Can be a timestamp also\n"
-                "4. \"label\"                            (string, optional default=\"\") Label for address in addressbook\n"
-                "5. \"num_prefix_bits\"                  (number, optional default=0) Number of prefix bits\n"
-                "6. \"prefix_num\"                       (string, optional default=\"\") prefix_num\n"
-                "7. bech32                               (bool, optional default=true) Is address bech32\n"
-                + HelpExampleCli("importlightwalletaddress", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\" 1000")
-                + HelpExampleRpc("importlightwalletaddress", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\" 1000")
-        );
+            "importlightwalletaddress \"scan_secret\" \"spend_public\" \"created_height\" \"label\" num_prefix_bits \"prefix_num\" \"bech32\" \n"
+            "\nImport a stealth addresses for use for light wallet servers only\n"
+            "\nArguments:\n"
+            "1. \"scan_secret\"                      (string, required) Scan secret key\n"
+            "2. \"spend_public\"                     (string, required) Spend Public Key (watchonly)\n"
+            "3. \"created_height\"                   (string, required) The block height, this address was created at. Can be a timestamp also\n"
+            "4. \"label\"                            (string, optional default=\"\") Label for address in addressbook\n"
+            "5. \"num_prefix_bits\"                  (number, optional default=0) Number of prefix bits\n"
+            "6. \"prefix_num\"                       (string, optional default=\"\") prefix_num\n"
+            "7. bech32                               (bool, optional default=true) Is address bech32\n" +
+            HelpExampleCli("importlightwalletaddress", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\" 1000") + HelpExampleRpc("importlightwalletaddress", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\" 1000"));
 
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!wallet) return NullUniValue;
@@ -2148,7 +2124,7 @@ static UniValue importlightwalletaddress(const JSONRPCRequest &request)
 
     const int64_t nImported = chainActive.Height();
 
-    std::string sScanSecret  = request.params[0].get_str();
+    std::string sScanSecret = request.params[0].get_str();
     std::string sLabel, sSpendPublic;
 
     if (request.params.size() > 1) {
@@ -2200,8 +2176,7 @@ static UniValue importlightwalletaddress(const JSONRPCRequest &request)
     CPubKey pkSpend;
     if (IsHex(sScanSecret)) {
         vchScanSecret = ParseHex(sScanSecret);
-    } else
-    if (wifScanSecret.SetString(sScanSecret)) {
+    } else if (wifScanSecret.SetString(sScanSecret)) {
         skScan = wifScanSecret.GetKey();
     } else {
         if (!DecodeBase58(sScanSecret, vchScanSecret, MAX_STEALTH_RAW_SIZE)) {
@@ -2278,20 +2253,18 @@ static UniValue importlightwalletaddress(const JSONRPCRequest &request)
     return result;
 };
 
-static UniValue getwatchonlystatus(const JSONRPCRequest &request)
+static UniValue getwatchonlystatus(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
-                "getwatchonlystatus \"scan_secret\" \"spend_public\" \n"
-                "\nView the imported status of a watchonly address\n"
-                "\nArguments:\n"
-                "1. \"scan_secret\"                      (string, required) Scan secret key\n"
-                "2. \"spend_public\"                     (string, required) Spend Public Key (watchonly)\n"
-                + HelpExampleCli("getwatchonlystatus", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\"")
-                + HelpExampleRpc("getwatchonlystatus", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\"")
-        );
+            "getwatchonlystatus \"scan_secret\" \"spend_public\" \n"
+            "\nView the imported status of a watchonly address\n"
+            "\nArguments:\n"
+            "1. \"scan_secret\"                      (string, required) Scan secret key\n"
+            "2. \"spend_public\"                     (string, required) Spend Public Key (watchonly)\n" +
+            HelpExampleCli("getwatchonlystatus", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\"") + HelpExampleRpc("getwatchonlystatus", "\"cQS2VU6R4CjsnrXn6jJWSvtzvrcjKHBB4mVSe17o4toJPPBqkbRm\" \"0362ae0f399a0a9f32c71f91ad75e009440c773ae663029acc486c4fb855c287a4\""));
 
-    std::string sScanSecret  = request.params[0].get_str();
+    std::string sScanSecret = request.params[0].get_str();
     std::string sSpendPublic = request.params[1].get_str();
 
     uint32_t num_prefix_bits = 0;
@@ -2304,8 +2277,7 @@ static UniValue getwatchonlystatus(const JSONRPCRequest &request)
     CPubKey pkSpend;
     if (IsHex(sScanSecret)) {
         vchScanSecret = ParseHex(sScanSecret);
-    } else
-    if (wifScanSecret.SetString(sScanSecret)) {
+    } else if (wifScanSecret.SetString(sScanSecret)) {
         skScan = wifScanSecret.GetKey();
     } else {
         if (!DecodeBase58(sScanSecret, vchScanSecret, MAX_STEALTH_RAW_SIZE)) {
@@ -2329,8 +2301,7 @@ static UniValue getwatchonlystatus(const JSONRPCRequest &request)
     if (vchSpendPublic.size() > 0) {
         if (vchSpendPublic.size() == 32) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Spend Public wasn't the right size. Please make sure you are sending the publickey, not the private");
-        } else
-        if (vchSpendPublic.size() == 33) {
+        } else if (vchSpendPublic.size() == 33) {
             // watchonly
             pkSpend = CPubKey(vchSpendPublic.begin(), vchSpendPublic.end());
         } else {
@@ -2389,18 +2360,16 @@ static UniValue getwatchonlystatus(const JSONRPCRequest &request)
 };
 
 
-static UniValue getanonoutputs(const JSONRPCRequest &request)
+static UniValue getanonoutputs(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
-                "getanonoutputs \"inputsize\" \"ringsize\" \n"
-                "\nGet random valid ringct outputs based on inputsize and ringsize given\n"
-                "\nArguments:\n"
-                "1. \"inputsize\"                      (number, required) The number of inputs being spent in the transaction\n"
-                "2. \"ringsize\"                       (number, required) The number of ring signatures per input in the transaction \n"
-                + HelpExampleCli("getanonoutputs", "5 5")
-                + HelpExampleRpc("getanonoutputs", "5 5")
-        );
+            "getanonoutputs \"inputsize\" \"ringsize\" \n"
+            "\nGet random valid ringct outputs based on inputsize and ringsize given\n"
+            "\nArguments:\n"
+            "1. \"inputsize\"                      (number, required) The number of inputs being spent in the transaction\n"
+            "2. \"ringsize\"                       (number, required) The number of ring signatures per input in the transaction \n" +
+            HelpExampleCli("getanonoutputs", "5 5") + HelpExampleRpc("getanonoutputs", "5 5"));
 
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!wallet) return NullUniValue;
@@ -2439,28 +2408,20 @@ static UniValue getanonoutputs(const JSONRPCRequest &request)
     return result;
 };
 
-static UniValue getkeyimages(const JSONRPCRequest &request)
+static UniValue getkeyimages(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 4)
         throw std::runtime_error(
-                "getkeyimages \"[txdata]\" \"spend_secret\" \"scan_secret\" \"spend_public\" \n"
-                "\nGet the keyimages of transactions\n"
-                "\nArguments:\n"
-                "1. \"[txdata]\"                   (array, required) The transaction info\n"
-                "2. \"spend_secret\"                      (string, required) The spend secret \n"
-                "3. \"scan_secret\"                       (string, required) The scan secret \n"
-                "4. \"spend_public\"                      (string, required) The spend public \n"
-                + HelpExampleCli("getkeyimages", "")
-                + HelpExampleRpc("getkeyimages", "")
-        );
+            "getkeyimages \"[txdata]\" \"spend_secret\" \"scan_secret\" \"spend_public\" \n"
+            "\nGet the keyimages of transactions\n"
+            "\nArguments:\n"
+            "1. \"[txdata]\"                   (array, required) The transaction info\n"
+            "2. \"spend_secret\"                      (string, required) The spend secret \n"
+            "3. \"scan_secret\"                       (string, required) The scan secret \n"
+            "4. \"spend_public\"                      (string, required) The spend public \n" +
+            HelpExampleCli("getkeyimages", "") + HelpExampleRpc("getkeyimages", ""));
 
-    RPCTypeCheck(request.params, {
-                         UniValue::VARR,
-                         UniValue::VSTR,
-                         UniValue::VSTR,
-                         UniValue::VSTR
-                 }, false
-    );
+    RPCTypeCheck(request.params, {UniValue::VARR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR}, false);
 
 
     UniValue txinfo = request.params[0].get_array();
@@ -2505,14 +2466,13 @@ static UniValue getkeyimages(const JSONRPCRequest &request)
     std::string errorMsg;
     std::vector<std::pair<CCmpPubKey, CWatchOnlyTx>> keyimages;
 
-    if(GetKeyImagesFromAPITransactions(keyimages, vecTx, key_spend_secret, key_scan_secret, pub_spend_key, errorMsg)) {
-
+    if (GetKeyImagesFromAPITransactions(keyimages, vecTx, key_spend_secret, key_scan_secret, pub_spend_key, errorMsg)) {
         // Lets get the amounts at the same time
         std::vector<CWatchOnlyTx> amounts;
         if (GetAmountAndBlindForUnspentTx(amounts, vecTx, key_spend_secret, key_scan_secret, pub_spend_key, errorMsg)) {
             UniValue ret(UniValue::VARR);
             int i = 0;
-            for (const auto item: keyimages) {
+            for (const auto item : keyimages) {
                 UniValue entry(UniValue::VOBJ);
                 entry.pushKV("tx_type", vecTx[i].type == CWatchOnlyTx::ANON ? "anon" : "stealth");
                 entry.pushKV("keyimage", HexStr(item.first.begin(), item.first.end()));
@@ -2532,36 +2492,25 @@ static UniValue getkeyimages(const JSONRPCRequest &request)
     return NullUniValue;
 };
 
-static UniValue buildlightwallettx(const JSONRPCRequest &request)
+static UniValue buildlightwallettx(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 7)
         throw std::runtime_error(
-                "buildlightwallettx \"to_address\" \"amount\" \"spend_secret\" \"scan_secret\" \"spend_public\" \"txdata\" \"dummydata\" \n"
-                "\nBuild a light wallet transaction\n"
-                "\nArguments:\n"
-                "1. \"to_address\"                   (string, required) The address to send funds to\n"
-                "2. \"amount\"                       (string, required) the amount to send\n"
-                "3. \"spend_secret\"                 (string, required) The spend secret \n"
-                "4. \"scan_secret\"                  (string, required) The scan secret \n"
-                "5. \"spend_public\"                 (string, required) The spend public \n"
-                "6. \"[txdata]\"                     (array, required) The transaction info\n"
-                "7. \"[dummydata]\"                  (array, required) The dummy transaction info\n"
-                "Result\n"
-                "1. \"hexstring\"                    (string) The signed raw hex of the transaction\n"
-                + HelpExampleCli("buildlightwallettx", "")
-                + HelpExampleRpc("buildlightwallettx", "")
-        );
+            "buildlightwallettx \"to_address\" \"amount\" \"spend_secret\" \"scan_secret\" \"spend_public\" \"txdata\" \"dummydata\" \n"
+            "\nBuild a light wallet transaction\n"
+            "\nArguments:\n"
+            "1. \"to_address\"                   (string, required) The address to send funds to\n"
+            "2. \"amount\"                       (string, required) the amount to send\n"
+            "3. \"spend_secret\"                 (string, required) The spend secret \n"
+            "4. \"scan_secret\"                  (string, required) The scan secret \n"
+            "5. \"spend_public\"                 (string, required) The spend public \n"
+            "6. \"[txdata]\"                     (array, required) The transaction info\n"
+            "7. \"[dummydata]\"                  (array, required) The dummy transaction info\n"
+            "Result\n"
+            "1. \"hexstring\"                    (string) The signed raw hex of the transaction\n" +
+            HelpExampleCli("buildlightwallettx", "") + HelpExampleRpc("buildlightwallettx", ""));
 
-    RPCTypeCheck(request.params, {
-                         UniValue::VSTR,
-                         UniValue::VSTR,
-                         UniValue::VSTR,
-                         UniValue::VSTR,
-                         UniValue::VSTR,
-                         UniValue::VARR,
-                         UniValue::VARR
-                 }, false
-    );
+    RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VARR, UniValue::VARR}, false);
 
 
     std::vector<std::string> args;
@@ -2633,44 +2582,43 @@ static UniValue buildlightwallettx(const JSONRPCRequest &request)
 };
 
 
-
 static const CRPCCommand commands[] =
-        { //  category              name                                actor (function)                argNames
-                //  --------------------- ------------------------            -----------------------         ----------
-                { "wallet",             "getnewaddress",             &getnewaddress,          {"label","num_prefix_bits","prefix_num","bech32","makeV2"} },
-                { "wallet",             "restoreaddresses",          &restoreaddresses,          {"generate_count"} },
-                { "wallet",             "rescanringctwallet",          &rescanringctwallet,          {} },
-                { "wallet",             "getstealthchangeaddress",          &getstealthchangeaddress,          {} },
-                { "wallet",             "sendbasecointostealth", &sendbasecointostealth,               {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
-				{ "wallet",             "sendbasecointomany", &sendbasecointomany,               {"addresses/amounts", "subtractfeefromamount"} },
+    {
+        //  category              name                                actor (function)                argNames
+        //  --------------------- ------------------------            -----------------------         ----------
+        {"wallet", "getnewaddress", &getnewaddress, {"label", "num_prefix_bits", "prefix_num", "bech32", "makeV2"}},
+        {"wallet", "restoreaddresses", &restoreaddresses, {"generate_count"}},
+        {"wallet", "rescanringctwallet", &rescanringctwallet, {}},
+        {"wallet", "getstealthchangeaddress", &getstealthchangeaddress, {}},
+        {"wallet", "sendbasecointostealth", &sendbasecointostealth, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
+        {"wallet", "sendbasecointomany", &sendbasecointomany, {"addresses/amounts", "subtractfeefromamount"}},
 
-                { "wallet",             "sendstealthtobasecoin", &sendstealthtobasecoin,               {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
-                { "wallet",             "sendstealthtostealth", &sendstealthtostealth,              {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
-                { "wallet",             "sendstealthtoringct", &sendstealthtoringct,              {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
+        {"wallet", "sendstealthtobasecoin", &sendstealthtobasecoin, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
+        {"wallet", "sendstealthtostealth", &sendstealthtostealth, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
+        {"wallet", "sendstealthtoringct", &sendstealthtoringct, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration"}},
 
-                { "wallet",             "sendringcttobasecoin", &sendringcttobasecoin,                {"address","amount","comment","comment_to","subtractfeefromamount","narration","ringsize","inputs_per_sig"} },
-                { "wallet",             "sendringcttostealth", &sendringcttostealth,               {"address","amount","comment","comment_to","subtractfeefromamount","narration","ringsize","inputs_per_sig"} },
-                { "wallet",             "sendringcttoringct", &sendringcttoringct,                {"address","amount","comment","comment_to","subtractfeefromamount","narration","ringsize","inputs_per_sig"} },
+        {"wallet", "sendringcttobasecoin", &sendringcttobasecoin, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration", "ringsize", "inputs_per_sig"}},
+        {"wallet", "sendringcttostealth", &sendringcttostealth, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration", "ringsize", "inputs_per_sig"}},
+        {"wallet", "sendringcttoringct", &sendringcttoringct, {"address", "amount", "comment", "comment_to", "subtractfeefromamount", "narration", "ringsize", "inputs_per_sig"}},
 
-                { "wallet",             "sendtypeto",                       &sendtypeto,                    {"typein","typeout","outputs","comment","comment_to","ringsize","inputs_per_sig","test_fee","coincontrol"} },
+        {"wallet", "sendtypeto", &sendtypeto, {"typein", "typeout", "outputs", "comment", "comment_to", "ringsize", "inputs_per_sig", "test_fee", "coincontrol"}},
 
-                { "rawtransactions",    "createrawbasecointransaction", &createrawbasecointransaction,      {"inputs","outputs","locktime","replaceable"} },
-                { "rawtransactions",    "fundrawtransactionfrom",           &fundrawtransactionfrom,        {"input_type","hexstring","input_amounts","output_amounts","options"} },
-                { "rawtransactions",    "verifycommitment",                 &verifycommitment,              {"commitment","blind","amount"} },
-                { "rawtransactions",    "verifyrawtransaction",             &verifyrawtransaction,          {"hexstring","prevtxs","returndecoded"} },
+        {"rawtransactions", "createrawbasecointransaction", &createrawbasecointransaction, {"inputs", "outputs", "locktime", "replaceable"}},
+        {"rawtransactions", "fundrawtransactionfrom", &fundrawtransactionfrom, {"input_type", "hexstring", "input_amounts", "output_amounts", "options"}},
+        {"rawtransactions", "verifycommitment", &verifycommitment, {"commitment", "blind", "amount"}},
+        {"rawtransactions", "verifyrawtransaction", &verifyrawtransaction, {"hexstring", "prevtxs", "returndecoded"}},
 
-                { "wallet",             "importlightwalletaddress",          &importlightwalletaddress,          {"scan_secret", "spend_public", "created_height", "label", "num_prefix_bits", "prefix_num", "bech32"} },
-                { "wallet",             "getwatchonlystatus",                &getwatchonlystatus,                {"scan_secret", "spend_public"} },
-                { "wallet",             "getanonoutputs",                &getanonoutputs,                {"inputsize", "ringsize"} },
-                { "wallet",             "getkeyimages",                &getkeyimages,                {"txdata", "spend_secret", "scan_secret", "spend_public"} },
-                { "wallet",             "buildlightwallettx",                &buildlightwallettx,                {"to_address", "amount", "spend_secret", "scan_secret", "spend_public", "txdata", "dummydata"} },
-
-
-        };
+        {"wallet", "importlightwalletaddress", &importlightwalletaddress, {"scan_secret", "spend_public", "created_height", "label", "num_prefix_bits", "prefix_num", "bech32"}},
+        {"wallet", "getwatchonlystatus", &getwatchonlystatus, {"scan_secret", "spend_public"}},
+        {"wallet", "getanonoutputs", &getanonoutputs, {"inputsize", "ringsize"}},
+        {"wallet", "getkeyimages", &getkeyimages, {"txdata", "spend_secret", "scan_secret", "spend_public"}},
+        {"wallet", "buildlightwallettx", &buildlightwallettx, {"to_address", "amount", "spend_secret", "scan_secret", "spend_public", "txdata", "dummydata"}},
 
 
+};
 
-void RegisterHDWalletRPCCommands(CRPCTable &t)
+
+void RegisterHDWalletRPCCommands(CRPCTable& t)
 {
     if (gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET))
         return;
