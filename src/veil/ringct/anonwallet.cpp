@@ -2021,6 +2021,10 @@ int AnonWallet::AddStandardInputs_Inner(CWalletTx &wtx, CTransactionRecord &rtx,
                 //If no change address is set, then use the default change address
                 if (!coinControl || (coinControl && coinControl->destChange.type() == typeid(CNoDestination))) {
                     r.address = GetStealthChangeAddress();
+                } else if (coinControl && (coinControl->destChange.type() == typeid(WitnessV0KeyHash) || coinControl->destChange.type() == typeid(CKeyID))) {
+                    // TO-DO review condition
+                    // allow sending change back to standard
+                    r.nType = OUTPUT_STANDARD;
                 }
 
                 if (!SetChangeDest(coinControl, r, sError)) {

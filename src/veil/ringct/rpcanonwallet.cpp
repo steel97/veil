@@ -261,7 +261,7 @@ static int AddOutput(uint8_t nType, std::vector<CTempRecipient> &vecSend, const 
     return 0;
 }
 
-static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, OutputTypes typeOut)
+static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, OutputTypes typeOut, const UniValue additionalConfig = UniValue(""))
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp)) {
@@ -327,14 +327,25 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Must provide an address.");
             }
 
+            auto localTypeOut = typeOut;
+            CTxDestination dest = DecodeDestination(sAddress);
             CBitcoinAddress address(sAddress);
 
-            if (typeOut == OUTPUT_RINGCT && !address.IsValidStealthAddress()) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid stealth address");
-            }
-
-            if (!obj.exists("script") && !address.IsValid()) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+            // TO-DO review
+            // support send to basecoin address
+            if ((dest.type() == typeid(WitnessV0KeyHash)) ||
+                (dest.type() == typeid(CKeyID))) {
+                localTypeOut = OUTPUT_STANDARD;
+                if (!IsValidDestination(dest)) {
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Veil address");
+                }
+            } else {
+                if (localTypeOut == OUTPUT_RINGCT && !address.IsValidStealthAddress()) {
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid stealth address");
+                }
+                if (!obj.exists("script") && !address.IsValid()) {
+                    throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+                }
             }
 
             if (obj.exists("amount")) {
@@ -354,7 +365,9 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
                 fSubtractFeeFromTotal |= fSubtractFeeFromAmount;
             }
 
-            if (0 != AddOutput(typeOut, vecSend, address.Get(), nAmount, fSubtractFeeFromAmount, sError)) {
+            // TO-DO review
+            // change address.get() to dest, for some unknown for me reason address.get() will not work
+            if (0 != AddOutput(localTypeOut, vecSend, dest, nAmount, fSubtractFeeFromAmount, sError)) {
                 throw JSONRPCError(RPC_MISC_ERROR, strprintf("AddOutput failed: %s.", sError));
             }
 
@@ -370,7 +383,7 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
                 r.scriptPubKey = CScript(scriptData.begin(), scriptData.end());
                 r.fScriptSet = true;
 
-                if (typeOut != OUTPUT_STANDARD) {
+                if (localTypeOut != OUTPUT_STANDARD) {
                     throw std::runtime_error("TODO: Currently setting a script only works for standard outputs.");
                 }
             }
@@ -463,8 +476,8 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
     CCoinControl coincontrol;
 
     nv = nCoinControlOfs;
-    if (request.params.size() > nv && request.params[nv].isObject()) {
-        const UniValue &uvCoinControl = request.params[nv].get_obj();
+    if (request.params.size() > nv && request.params[nv].isObject() || additionalConfig.isObject()) {
+        const UniValue &uvCoinControl = additionalConfig.isObject() ? additionalConfig.get_obj() : request.params[nv].get_obj();
 
         if (uvCoinControl.exists("changeaddress")) {
             std::string sChangeAddress = uvCoinControl["changeaddress"].get_str();
@@ -483,8 +496,11 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
             }
 
             if (!fHaveScript) {
-                CBitcoinAddress addrChange(sChangeAddress);
-                coincontrol.destChange = addrChange.Get();
+                // TO-DO review
+                // for some reason it won't work
+                // CBitcoinAddress addrChange(sChangeAddress);
+                // coincontrol.destChange = addrChange.Get();
+                coincontrol.destChange = DecodeDestination(sChangeAddress);
             }
         }
 
@@ -764,6 +780,115 @@ static UniValue sendbasecointostealth(const JSONRPCRequest& request)
         throw std::runtime_error(SendHelp(wallet, OUTPUT_STANDARD, OUTPUT_CT));
 
     return SendToInner(request, OUTPUT_STANDARD, OUTPUT_CT);
+};
+
+static UniValue sendbasecointomany(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp))
+        return NullUniValue;
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
+        throw std::runtime_error(SendHelp(wallet, OUTPUT_STANDARD, OUTPUT_RINGCT)); // TO-DO, write actual help
+    JSONRPCRequest middleRequest;
+    middleRequest.fHelp = request.fHelp;
+    middleRequest.id = request.id;
+    middleRequest.authUser = request.authUser;
+    middleRequest.peerAddr = request.peerAddr;
+    middleRequest.strMethod = request.strMethod;
+    middleRequest.URI = request.URI;
+    middleRequest.params = UniValue(UniValue::VARR);
+    // get self addresses
+    CWallet* const pwallet = wallet.get();
+    std::string myAddressStealth = "";
+    std::string myAddressBasecoin = "";
+    // changeaddress
+    for (const auto& item : pwallet->mapAddressBook) {
+        // Only get mine
+        if (!pwallet->IsMine(item.first)) continue;
+        // Only get basecoin and stealth addresses
+        if (((item.first.type() == typeid(CStealthAddress))))
+            myAddressStealth = EncodeDestination(item.first, true);
+        if ((item.first.type() == typeid(WitnessV0KeyHash)) ||
+            (item.first.type() == typeid(CKeyID))) {
+            myAddressBasecoin = EncodeDestination(item.first, true);
+        }
+        if (myAddressStealth != "" && myAddressBasecoin != "")
+            break;
+    }
+    middleRequest.params.push_back(myAddressStealth);
+    CAmount targetAmount(0); // amount which should be send to stealth
+    if (request.params[0].isArray()) {
+        const UniValue& outputs = request.params[0].get_array();
+        for (size_t k = 0; k < outputs.size(); ++k) {
+            if (!outputs[k].isObject()) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Not an object");
+            }
+            const UniValue& obj = outputs[k].get_obj();
+            std::string sAddress;
+            CAmount nAmount;
+            if (obj.exists("amount")) {
+                nAmount = AmountFromValue(obj["amount"]);
+            } else {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Must provide an amount.");
+            }
+            if (nAmount <= 0) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount");
+            }
+            targetAmount += nAmount;
+        }
+    } else {
+        // only array supported
+        throw std::runtime_error(SendHelp(wallet, OUTPUT_STANDARD, OUTPUT_RINGCT)); // TO-DO, write actual help
+    }
+    middleRequest.params.push_back(ValueFromAmount(targetAmount));
+    middleRequest.params.push_back(""); // comment
+    middleRequest.params.push_back(""); // comment to
+    // subtractfeefromamount
+    bool substractFee = true; // fee substraction require ringct balance, so it's not recommended to use it for now
+    if (request.params.size() > 1 && request.params[1].isBool()) {
+        substractFee = request.params[1].get_bool();
+    }
+    middleRequest.params.push_back(UniValue(substractFee));
+    if (!substractFee) {
+        // TO-DO
+        // this is to ensure we have enough money on stealth if don't substracting fee from ricipient amount
+        targetAmount += CAmount(CENT * 2);
+    }
+    UniValue uvCoinControl(UniValue::VOBJ);
+    uvCoinControl.pushKV("show_fee", UniValue(true));
+    uvCoinControl.pushKV("changeaddress", myAddressBasecoin);
+    auto middleResult = SendToInner(middleRequest, OUTPUT_STANDARD, OUTPUT_CT, uvCoinControl);
+    if (!middleResult.isArray() || middleResult.size() < 1)
+        throw JSONRPCError(RPC_FAILED_TO_GET_AMOUNTS, "Error: can't get fee for middle transaction");
+    auto middleResultObj = middleResult[0];
+    if (!middleResultObj.isObject() || !middleResultObj.exists("fee")) {
+        throw JSONRPCError(RPC_FAILED_TO_GET_AMOUNTS, "Error: can't get fee for middle transaction");
+    }
+    JSONRPCRequest targetRequest;
+    targetRequest.fHelp = request.fHelp;
+    targetRequest.id = request.id;
+    targetRequest.authUser = request.authUser;
+    targetRequest.peerAddr = request.peerAddr;
+    targetRequest.strMethod = request.strMethod;
+    targetRequest.URI = request.URI;
+    targetRequest.params = UniValue(UniValue::VARR);
+    auto fee = AmountFromValue(middleResultObj["fee"]);
+    if (request.params[0].isArray()) {
+        // substract initial fee for all recipients
+        UniValue outputs = request.params[0].get_array();
+        UniValue newOutputs(UniValue::VARR);
+        auto feePerRecipient = substractFee ? ceil(fee / (int64_t)outputs.size()) : 0; // TO-DO, rounding... should it be something like math.ceil?
+        for (size_t k = 0; k < outputs.size(); ++k) {
+            UniValue obj = outputs[k].get_obj();
+            auto nAmount = AmountFromValue(obj["amount"]) - feePerRecipient;
+            UniValue uval = ValueFromAmount(nAmount);
+            obj.pushKV("amount", uval);
+            obj.pushKV("subfee", substractFee);
+            newOutputs.push_back(obj);
+        }
+        targetRequest.params.push_back(newOutputs);
+    }
+    return SendToInner(targetRequest, OUTPUT_CT, OUTPUT_RINGCT);
 };
 
 static UniValue sendstealthtobasecoin(const JSONRPCRequest& request)
@@ -2517,6 +2642,7 @@ static const CRPCCommand commands[] =
                 { "wallet",             "rescanringctwallet",          &rescanringctwallet,          {} },
                 { "wallet",             "getstealthchangeaddress",          &getstealthchangeaddress,          {} },
                 { "wallet",             "sendbasecointostealth", &sendbasecointostealth,               {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
+				{ "wallet",             "sendbasecointomany", &sendbasecointomany,               {"addresses/amounts", "subtractfeefromamount"} },
 
                 { "wallet",             "sendstealthtobasecoin", &sendstealthtobasecoin,               {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
                 { "wallet",             "sendstealthtostealth", &sendstealthtostealth,              {"address","amount","comment","comment_to","subtractfeefromamount","narration"} },
