@@ -1,0 +1,9 @@
+--- Makefile.am	2014-07-24 15:17:49.000000000 +0300
++++ Makefile.am2	2023-08-17 20:14:13.533572500 +0300
+@@ -1,5 +1,5 @@
+ AUTOMAKE_OPTIONS = foreign
+-ACLOCAL_AMFLAGS=-I m4
++ACLOCAL_AMFLAGS=-I m4 --disable-shared -without-tools --disable-sdltest
+ 
+ SUBDIRS = .
+ 

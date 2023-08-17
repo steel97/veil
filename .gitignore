@@ -67,7 +67,6 @@ src/qt/veil-qt.includes
 *.pyc
 *.o
 *.o-*
-*.patch
 *.a
 *.pb.cc
 *.pb.h
