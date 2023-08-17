@@ -69,8 +69,8 @@ jobs:
       run: |
         mkdir -p $ARTIFACT_DIR
         # strip fails with "Unable to recognise the format of the input file"
-        # strip $SOURCE_ARTIFACT/src/{veil-cli,veil-tx,veild}
-        mv $SOURCE_ARTIFACT/src/{veil-cli,veil-tx,veild} $ARTIFACT_DIR
+        # strip $SOURCE_ARTIFACT/src/{veil-cli,veil-tx,veild,qt/veil-qt}
+        mv $SOURCE_ARTIFACT/src/{veil-cli,veil-tx,veild,qt/veil-qt} $ARTIFACT_DIR
     - name: Upload Artifact
       uses: actions/upload-artifact@v1
       with:
