@@ -10,7 +10,8 @@ $(package)_config_opts_linux=--with-pic
 endef
 
 define $(package)_config_cmds
-  $($(package)_autoconf)
+  $($(package)_autoconf) -fiv
+  $($(package)_autoupdate)
 endef
 
 define $(package)_build_cmds
