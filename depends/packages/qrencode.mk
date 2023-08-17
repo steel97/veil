@@ -15,8 +15,6 @@ define $(package)_preprocess_cmds
 endef
 
 define $(package)_config_cmds
-  autoreconf -fiv && \
-  autoupdate && \
   $($(package)_autoconf)
 endef
 
