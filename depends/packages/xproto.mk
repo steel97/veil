@@ -9,6 +9,8 @@ $(package)_config_opts=--disable-shared
 endef
 
 define $(package)_config_cmds
+  autoreconf -fiv  && \
+  autoupdate  && \
   $($(package)_autoconf)
 endef
 
