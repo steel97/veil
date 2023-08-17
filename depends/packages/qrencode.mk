@@ -10,6 +10,10 @@ $(package)_config_opts=--disable-shared -without-tools --disable-sdltest
 $(package)_config_opts_linux=--with-pic
 endef
 
+define $(package)_preprocess_cmds
+  patch -p1 -i $($(package)_patch_dir)/autoreconf_fix.patch 
+endef
+
 define $(package)_config_cmds
   autoreconf -fiv && \
   autoupdate && \
