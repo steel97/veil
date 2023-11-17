@@ -140,7 +140,7 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
 //            }
 
             if (pblocktree->ReadRCTKeyImage(ki, txhashKI) && txhashKI != txhash) {
-                LogPrintf("%s: Key image in tx %s\n", __func__, txhashKI.GetHex());
+                LogPrintf("%s: Key image in tx %s and %s\n", __func__, txhashKI.GetHex(), txhash.GetHex());
                 return state.DoS(100, false, REJECT_INVALID, "bad-anonin-dup-keyimage");
             }
         }
