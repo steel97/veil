@@ -140,10 +140,16 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
 //            }
 
             if (pblocktree->ReadRCTKeyImage(ki, txhashKI) && txhashKI != txhash) {
-                LogPrintf("%s: Key image in tx %s and %s\n", __func__, txhashKI.GetHex(), txhash.GetHex());
+                LogPrintf("%s: Key image in tx %s and %s and %uul\n", __func__, txhashKI.GetHex(), txhash.GetHex(), k);
+                LogPrintf("anon verify keyimages: %s\n", HexStr(vKeyImages));
                 return state.DoS(100, false, REJECT_INVALID, "bad-anonin-dup-keyimage");
             }
         }
+
+        LogPrintf("anon verify tx: %s\n", HexStr(hashOutputs));
+        LogPrintf("anon verify keyimages: %s\n", HexStr(vKeyImages));
+        LogPrintf("anon verify ncols: %uul\n", nCols);
+        LogPrintf("anon verify nrows: %uul\n", nRows);
 
         if (0 != (rv = secp256k1_prepare_mlsag(&vM[0], nullptr, vpOutCommits.size(), vpOutCommits.size(), nCols, nRows,
                 &vpInCommits[0], &vpOutCommits[0], nullptr)))
